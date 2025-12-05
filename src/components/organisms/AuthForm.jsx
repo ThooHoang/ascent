@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { AuthFormFields } from '../molecules/AuthFormFields'
+import { AuthModeToggle } from '../molecules/AuthModeToggle'
+import { WelcomeMessage } from '../molecules/WelcomeMessage'
 
-export function AuthForm() {
+export function AuthForm({ initialMode = false }) {
   const { signIn, signUp, user, signOut } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(initialMode)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -22,50 +25,41 @@ export function AuthForm() {
     setLoading(false)
   }
 
+  const handleToggleMode = () => {
+    setIsSignUp(!isSignUp)
+    // Clear form when switching modes
+    setEmail('')
+    setPassword('')
+  }
+
   if (user) {
-    return (
-      <div>
-        <h2>Welcome to Ascent!</h2>
-        <p>Logged in as: {user.email}</p>
-        <button onClick={signOut}>Sign Out</button>
-      </div>
-    )
+    return <WelcomeMessage user={user} onSignOut={signOut} />
   }
 
   return (
-    <div>
-      <h2>{isSignUp ? 'Create Account' : 'Sign In'}</h2>
+    <div className="auth-form">
+      <h2>{isSignUp ? 'Join Ascent' : 'Welcome Back'}</h2>
+      <p className="auth-subtitle">
+        {isSignUp 
+          ? 'Start your holistic self-improvement journey' 
+          : 'Continue your growth journey'
+        }
+      </p>
       
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        
-        <div>
-          <input
-            type="password"
-            placeholder="Password (min 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-        
-        <button type="submit" disabled={loading}>
-          {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
-        </button>
-      </form>
+      <AuthFormFields
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        isSignUp={isSignUp}
+        loading={loading}
+        onSubmit={handleSubmit}
+      />
       
-      <button onClick={() => setIsSignUp(!isSignUp)}>
-        {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-      </button>
+      <AuthModeToggle 
+        isSignUp={isSignUp} 
+        onToggle={handleToggleMode}
+      />
     </div>
   )
 }
