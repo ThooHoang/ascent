@@ -1,19 +1,25 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useRef } from 'react'
 import { Home, Dumbbell, ListTodo, User } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
 import { SmartHabits } from '../components/features/SmartHabits'
 import { SleepTracker } from '../components/features/SleepTracker'
+import { ProgressTracker } from '../components/features/ProgressTracker'
 
 function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, profile } = useAuth()
+  const progressRef = useRef(null)
 
   const nextSession = {
     title: 'Push Day · 6:30 PM',
     note: 'Bench 4x6 @ 75%, Dips 3x10, Plank 3x45s',
   }
+
+  const goToSleep = () => navigate('/sleep')
+  const goToProgress = () => progressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
     <div className="dashboard-page">
@@ -23,6 +29,16 @@ function HomePage() {
             <p className="hero-eyebrow">Ascent</p>
             <h1 className="hero-title">Hi {profile?.name || user?.email?.split('@')[0] || 'there'} 👋</h1>
             <p className="hero-subtitle">Stay consistent, avoid burnout, climb steadily.</p>
+          </div>
+        </section>
+
+        <section className="quick-actions">
+          <p className="section-title">Quick actions</p>
+          <div className="actions-row">
+            <Button className="w-full" size="large" onClick={() => navigate('/workouts')}>Start workout</Button>
+            <Button className="w-full" size="large" onClick={goToSleep}>Log sleep</Button>
+            <Button className="w-full" size="large" onClick={goToProgress}>Add weight</Button>
+            <Button className="w-full" size="large" onClick={goToProgress}>Add photo</Button>
           </div>
         </section>
 
@@ -46,12 +62,15 @@ function HomePage() {
           <SleepTracker />
         </section>
 
+        <section ref={progressRef}>
+          <ProgressTracker />
+        </section>
+
         <section className="quick-actions">
-          <p className="section-title">Quick actions</p>
+          <p className="section-title">Upcoming</p>
           <div className="actions-row">
-            <Button className="w-full" size="large">Start workout</Button>
-            <Button className="w-full" size="large">Log habit</Button>
-            <Button className="w-full" size="large" variant="danger">Add note</Button>
+            <Button className="w-full" size="large" onClick={() => navigate('/sleep')}>Sleep dashboard</Button>
+            <Button className="w-full" size="large" onClick={goToProgress}>Progress check-in</Button>
           </div>
         </section>
 

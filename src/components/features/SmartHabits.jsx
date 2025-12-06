@@ -15,13 +15,39 @@ export function SmartHabits() {
   const [completions, setCompletions] = useState({})
   const [streaks, setStreaks] = useState({})
   const [loading, setLoading] = useState(true)
+  const [showAddHabit, setShowAddHabit] = useState(false)
+  const [newHabitName, setNewHabitName] = useState('')
+  const [newHabitTarget, setNewHabitTarget] = useState(10)
+
+  const storageKey = user?.id ? `custom-habits-${user.id}` : 'custom-habits-guest'
 
   useEffect(() => {
     if (user?.id) {
+      loadHabits()
       fetchTodayCompletions()
       fetchStreaks()
     }
   }, [user?.id])
+
+  const loadHabits = () => {
+    const stored = localStorage.getItem(storageKey)
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setHabits([...DEFAULT_HABITS, ...parsed])
+      } catch (err) {
+        console.error('Error parsing habits storage:', err)
+        setHabits(DEFAULT_HABITS)
+      }
+    } else {
+      setHabits(DEFAULT_HABITS)
+    }
+  }
+
+  const persistHabits = (updated) => {
+    const custom = updated.filter(habit => !DEFAULT_HABITS.find(d => d.id === habit.id))
+    localStorage.setItem(storageKey, JSON.stringify(custom))
+  }
 
   const fetchTodayCompletions = async () => {
     try {
@@ -102,6 +128,7 @@ export function SmartHabits() {
 
         if (!error) {
           setCompletions(prev => ({ ...prev, [habitId]: false }))
+          await reduceStreakOnUndo(habitId, today)
         }
       }
     } catch (err) {
@@ -166,8 +193,71 @@ export function SmartHabits() {
     }
   }
 
+  const reduceStreakOnUndo = async (habitId, todayString) => {
+    try {
+      const { data, error } = await supabase
+        .from('habit_streaks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('habit_id', habitId)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching streak for undo:', error)
+        return
+      }
+
+      if (!data) return
+
+      const lastDate = data.last_completed_date ? data.last_completed_date.split('T')[0] : null
+      const newCurrent = lastDate === todayString ? Math.max(0, (data.current_streak || 1) - 1) : data.current_streak || 0
+      const updated = {
+        current_streak: newCurrent,
+        best_streak: data.best_streak || 0,
+        last_completed_date: lastDate === todayString ? null : data.last_completed_date,
+      }
+
+      const { error: updateError } = await supabase
+        .from('habit_streaks')
+        .update(updated)
+        .eq('user_id', user.id)
+        .eq('habit_id', habitId)
+
+      if (!updateError) {
+        setStreaks(prev => ({
+          ...prev,
+          [habitId]: {
+            habit_id: habitId,
+            ...updated,
+          },
+        }))
+      }
+    } catch (err) {
+      console.error('Error reducing streak:', err)
+    }
+  }
+
+  const addHabit = () => {
+    if (!newHabitName.trim()) return
+    const id = `custom-${Date.now()}`
+    const habit = {
+      id,
+      name: newHabitName.trim(),
+      target: Math.max(5, Number(newHabitTarget) || 10),
+    }
+
+    const updated = [...habits, habit]
+    setHabits(updated)
+    persistHabits(updated)
+    setNewHabitName('')
+    setNewHabitTarget(10)
+    setShowAddHabit(false)
+  }
+
+  const hasHabits = habits && habits.length > 0
+
   const completedCount = Object.values(completions).filter(Boolean).length
-  const completionPercentage = Math.round((completedCount / habits.length) * 100)
+  const completionPercentage = habits.length ? Math.round((completedCount / habits.length) * 100) : 0
 
   if (loading) {
     return <div className="habits-loading">Loading habits...</div>
@@ -188,7 +278,7 @@ export function SmartHabits() {
       </div>
 
       <div className="habits-list">
-        {habits.map(habit => {
+        {hasHabits ? habits.map(habit => {
           const isCompleted = completions[habit.id]
           const streak = streaks[habit.id]
           
@@ -216,7 +306,40 @@ export function SmartHabits() {
               )}
             </div>
           )
-        })}
+        }) : (
+          <p className="habits-empty">Add your first habit to start a streak.</p>
+        )}
+      </div>
+
+      <div className="habit-add">
+        {showAddHabit ? (
+          <div className="habit-add-form">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Habit name (e.g. Stretch)"
+              value={newHabitName}
+              onChange={(e) => setNewHabitName(e.target.value)}
+            />
+            <input
+              type="number"
+              className="input-field"
+              min="5"
+              max="240"
+              value={newHabitTarget}
+              onChange={(e) => setNewHabitTarget(e.target.value)}
+              placeholder="Minutes"
+            />
+            <div className="habit-add-actions">
+              <button className="btn" type="button" onClick={() => setShowAddHabit(false)}>Cancel</button>
+              <button className="btn btn-primary" type="button" onClick={addHabit}>Save</button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn-primary w-full" type="button" onClick={() => setShowAddHabit(true)}>
+            + Add habit
+          </button>
+        )}
       </div>
 
       <p className="habits-tip">✨ Complete all habits to build momentum</p>

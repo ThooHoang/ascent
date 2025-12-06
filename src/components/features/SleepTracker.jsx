@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 
 export function SleepTracker() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [sleepHours, setSleepHours] = useState(7.5)
   const [sleepQuality, setSleepQuality] = useState('good')
   const [lastSleepDate, setLastSleepDate] = useState(null)
@@ -133,6 +135,10 @@ export function SleepTracker() {
       {lastSleepDate && (
         <p className="sleep-hint">Last logged: {lastSleepDate}</p>
       )}
+
+      <button className="text-link" type="button" onClick={() => navigate('/sleep')}>
+        View full sleep history →
+      </button>
     </article>
   )
 }

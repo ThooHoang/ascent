@@ -2,11 +2,26 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Home, Dumbbell, ListTodo, User as UserIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { useState } from 'react'
 
 function ProfilePage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, updateProfile } = useAuth()
+  
+  const [isEditing, setIsEditing] = useState(false)
+  const [name, setName] = useState(profile?.name || '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    const { error } = await updateProfile({ name })
+    if (!error) {
+      setIsEditing(false)
+    }
+    setSaving(false)
+  }
 
   const handleSignOut = async () => {
     if (window.confirm('Are you sure you want to sign out?')) {
@@ -26,8 +41,32 @@ function ProfilePage() {
           <div className="profile-avatar-large">
             {(profile?.name || 'U')[0].toUpperCase()}
           </div>
-          <h1 className="profile-name-title">{profile?.name || 'User'}</h1>
-          <p className="profile-email">{user?.email}</p>
+          
+          {isEditing ? (
+            <div className="profile-edit-section">
+              <Input
+                id="name-input"
+                label="Display name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
+              <div className="profile-edit-actions">
+                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button variant="primary" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className="profile-name-title">{profile?.name || 'User'}</h1>
+              <p className="profile-email">{user?.email}</p>
+              <Button size="default" onClick={() => { setName(profile?.name || ''); setIsEditing(true); }}>
+                Edit name
+              </Button>
+            </>
+          )}
         </section>
 
         <section className="profile-section">

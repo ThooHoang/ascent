@@ -4,6 +4,9 @@ import LoginPage from './pages/LoginPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import SplashPage from './pages/SplashPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
+import SleepPage from './pages/SleepPage.jsx'
+import HabitsPage from './pages/HabitsPage.jsx'
+import WorkoutsPage from './pages/WorkoutsPage.jsx'
 import { useAuth } from './hooks/useAuth.js'
 
 function App() {
@@ -41,6 +44,18 @@ function App() {
         <Route 
           path="/dashboard" 
           element={user ? <HomePage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/sleep" 
+          element={user ? <SleepPage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/habits" 
+          element={user ? <HabitsPage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/workouts" 
+          element={user ? <WorkoutsPage /> : <Navigate to="/" replace />} 
         />
         <Route 
           path="/profile" 
