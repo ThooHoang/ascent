@@ -1,59 +1,105 @@
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Home, Dumbbell, ListTodo, User } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { Button } from '../components/ui/Button'
+import { SmartHabits } from '../components/features/SmartHabits'
+import { SleepTracker } from '../components/features/SleepTracker'
 
 function HomePage() {
-  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user, profile } = useAuth()
+
+  const nextSession = {
+    title: 'Push Day · 6:30 PM',
+    note: 'Bench 4x6 @ 75%, Dips 3x10, Plank 3x45s',
+  }
 
   return (
-    <main className="home-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ margin: 0 }}>Ascent</h1>
-        <button onClick={signOut} className="btn btn-danger">
-          Sign Out
+    <div className="dashboard-page">
+      <main className="dashboard-main">
+        <section className="hero">
+          <div>
+            <p className="hero-eyebrow">Ascent</p>
+            <h1 className="hero-title">Hi {profile?.name || user?.email?.split('@')[0] || 'there'} 👋</h1>
+            <p className="hero-subtitle">Stay consistent, avoid burnout, climb steadily.</p>
+          </div>
+        </section>
+
+        <section className="today-strip">
+          <div>
+            <p className="metric-label">Tasks left</p>
+            <p className="metric-value">3</p>
+          </div>
+          <div>
+            <p className="metric-label">Minutes</p>
+            <p className="metric-value">45</p>
+          </div>
+          <div>
+            <p className="metric-label">Completed</p>
+            <p className="metric-value">2</p>
+          </div>
+        </section>
+
+        <section className="card-grid">
+          <SmartHabits />
+          <SleepTracker />
+        </section>
+
+        <section className="quick-actions">
+          <p className="section-title">Quick actions</p>
+          <div className="actions-row">
+            <Button className="w-full" size="large">Start workout</Button>
+            <Button className="w-full" size="large">Log habit</Button>
+            <Button className="w-full" size="large" variant="danger">Add note</Button>
+          </div>
+        </section>
+
+        <section className="next-session">
+          <div>
+            <p className="section-title">Next session</p>
+            <h3 className="session-title">{nextSession.title}</h3>
+            <p className="session-note">{nextSession.note}</p>
+          </div>
+          <Button size="large" className="w-full">Open plan</Button>
+        </section>
+      </main>
+
+      <nav className="bottom-nav" aria-label="Primary navigation">
+        <button
+          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
+          onClick={() => navigate('/dashboard')}
+          type="button"
+          aria-label="Dashboard"
+        >
+          <Home size={22} />
         </button>
-      </div>
-      
-      <div style={{ 
-        backgroundColor: '#F0FDF4', 
-        padding: '1.5rem', 
-        borderRadius: '0.75rem', 
-        marginBottom: '1.5rem', 
-        border: '1px solid #E5E7EB' 
-      }}>
-        <h2 style={{ textAlign: 'center', margin: '0 0 1rem 0' }}>🎉 Welcome to Your Journey</h2>
-        <p style={{ textAlign: 'center', color: '#6B7280', margin: 0 }}>
-          Hello <strong style={{ color: '#16A34A' }}>{user?.email}</strong>, 
-          ready to track your holistic self-improvement?
-        </p>
-      </div>
-
-      <div style={{ 
-        backgroundColor: '#F0FDF4', 
-        padding: '1.5rem', 
-        borderRadius: '0.75rem', 
-        marginBottom: '1.5rem', 
-        border: '1px solid #E5E7EB' 
-      }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Next Steps</h3>
-        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-          <li style={{ marginBottom: '0.5rem' }}>🏋️ Build your exercise library</li>
-          <li style={{ marginBottom: '0.5rem' }}>📊 Track your workouts with rest timers</li>
-          <li style={{ marginBottom: '0.5rem' }}>😴 Log your sleep quality</li>
-          <li style={{ marginBottom: '0.5rem' }}>📈 See correlations and insights</li>
-        </ul>
-      </div>
-
-      <div style={{ 
-        backgroundColor: '#F0FDF4', 
-        padding: '1.5rem', 
-        borderRadius: '0.75rem', 
-        border: '1px solid #E5E7EB' 
-      }}>
-        <p style={{ textAlign: 'center', color: '#6B7280', margin: 0 }}>
-          <strong style={{ color: '#16A34A' }}>✅ Authentication Complete</strong><br/>
-          Phase 1 of your Ascent journey is ready!
-        </p>
-      </div>
-    </main>
+        <button
+          className={`nav-item ${location.pathname === '/workouts' ? 'active' : ''}`}
+          onClick={() => navigate('/workouts')}
+          type="button"
+          aria-label="Workouts"
+        >
+          <Dumbbell size={22} />
+        </button>
+        <button
+          className={`nav-item ${location.pathname === '/habits' ? 'active' : ''}`}
+          onClick={() => navigate('/habits')}
+          type="button"
+          aria-label="Habits"
+        >
+          <ListTodo size={22} />
+        </button>
+        <button
+          className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
+          onClick={() => navigate('/profile')}
+          type="button"
+          aria-label="Profile"
+        >
+          <User size={22} />
+        </button>
+      </nav>
+    </div>
   )
 }
 

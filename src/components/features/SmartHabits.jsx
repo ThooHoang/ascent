@@ -1,0 +1,225 @@
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
+
+const DEFAULT_HABITS = [
+  { id: 'water', name: '💧 Drink water', target: 8 },
+  { id: 'exercise', name: '🏃 Exercise', target: 30 },
+  { id: 'reading', name: '📖 Reading', target: 20 },
+  { id: 'meditation', name: '🧘 Meditation', target: 10 },
+]
+
+export function SmartHabits() {
+  const { user } = useAuth()
+  const [habits, setHabits] = useState(DEFAULT_HABITS)
+  const [completions, setCompletions] = useState({})
+  const [streaks, setStreaks] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchTodayCompletions()
+      fetchStreaks()
+    }
+  }, [user?.id])
+
+  const fetchTodayCompletions = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('habit_completions')
+        .select('habit_id, completed')
+        .eq('user_id', user.id)
+        .eq('date', today)
+
+      if (data) {
+        const completed = {}
+        data.forEach(item => {
+          completed[item.habit_id] = item.completed
+        })
+        setCompletions(completed)
+      }
+    } catch (err) {
+      console.error('Error fetching completions:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchStreaks = async () => {
+    try {
+      const { data } = await supabase
+        .from('habit_streaks')
+        .select('habit_id, current_streak, best_streak, last_completed_date')
+        .eq('user_id', user.id)
+
+      if (data) {
+        const streakMap = {}
+        data.forEach(item => {
+          streakMap[item.habit_id] = item
+        })
+        setStreaks(streakMap)
+      }
+    } catch (err) {
+      console.error('Error fetching streaks:', err)
+    }
+  }
+
+  const toggleHabit = async (habitId) => {
+    const isCompleted = completions[habitId]
+    const newState = !isCompleted
+
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      
+      if (newState) {
+        // Mark as completed
+        const { error } = await supabase
+          .from('habit_completions')
+          .upsert(
+            {
+              user_id: user.id,
+              habit_id: habitId,
+              date: today,
+              completed: true,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,habit_id,date' }
+          )
+
+        if (!error) {
+          setCompletions(prev => ({ ...prev, [habitId]: true }))
+          await updateStreak(habitId, true)
+        }
+      } else {
+        // Mark as incomplete
+        const { error } = await supabase
+          .from('habit_completions')
+          .update({ completed: false })
+          .eq('user_id', user.id)
+          .eq('habit_id', habitId)
+          .eq('date', today)
+
+        if (!error) {
+          setCompletions(prev => ({ ...prev, [habitId]: false }))
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling habit:', err)
+    }
+  }
+
+  const updateStreak = async (habitId, isCompleting) => {
+    try {
+      const today = new Date()
+      
+      let { data: streakData } = await supabase
+        .from('habit_streaks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('habit_id', habitId)
+        .single()
+
+      const currentStreak = streakData?.current_streak || 0
+      const bestStreak = streakData?.best_streak || 0
+      const lastCompleted = streakData?.last_completed_date ? new Date(streakData.last_completed_date) : null
+
+      let newStreak = currentStreak
+      const daysDiff = lastCompleted ? Math.floor((today - lastCompleted) / (1000 * 60 * 60 * 24)) : 0
+
+      if (isCompleting) {
+        if (daysDiff === 1 || !lastCompleted) {
+          newStreak = currentStreak + 1
+        } else if (daysDiff > 1) {
+          newStreak = 1
+        }
+      }
+
+      const newBestStreak = Math.max(newStreak, bestStreak)
+
+      const { error } = await supabase
+        .from('habit_streaks')
+        .upsert(
+          {
+            user_id: user.id,
+            habit_id: habitId,
+            current_streak: newStreak,
+            best_streak: newBestStreak,
+            last_completed_date: today.toISOString(),
+          },
+          { onConflict: 'user_id,habit_id' }
+        )
+
+      if (!error) {
+        setStreaks(prev => ({
+          ...prev,
+          [habitId]: {
+            habit_id: habitId,
+            current_streak: newStreak,
+            best_streak: newBestStreak,
+            last_completed_date: today.toISOString(),
+          }
+        }))
+      }
+    } catch (err) {
+      console.error('Error updating streak:', err)
+    }
+  }
+
+  const completedCount = Object.values(completions).filter(Boolean).length
+  const completionPercentage = Math.round((completedCount / habits.length) * 100)
+
+  if (loading) {
+    return <div className="habits-loading">Loading habits...</div>
+  }
+
+  return (
+    <article className="habits-card">
+      <div className="habits-header">
+        <div>
+          <p className="card-label">Daily Habits</p>
+          <p className="card-value">{completedCount}/{habits.length}</p>
+        </div>
+        <div className="habits-badge">{completionPercentage}%</div>
+      </div>
+
+      <div className="card-bar">
+        <span style={{ width: `${completionPercentage}%` }} />
+      </div>
+
+      <div className="habits-list">
+        {habits.map(habit => {
+          const isCompleted = completions[habit.id]
+          const streak = streaks[habit.id]
+          
+          return (
+            <div key={habit.id} className="habit-item">
+              <button
+                className={`habit-checkbox ${isCompleted ? 'completed' : ''}`}
+                onClick={() => toggleHabit(habit.id)}
+                type="button"
+                aria-label={`Toggle ${habit.name}`}
+              >
+                {isCompleted && '✓'}
+              </button>
+              
+              <div className="habit-info">
+                <p className="habit-name">{habit.name}</p>
+                <p className="habit-target">{habit.target} min</p>
+              </div>
+
+              {streak && (
+                <div className="habit-streak">
+                  <span className="streak-icon">🔥</span>
+                  <span className="streak-count">{streak.current_streak}</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="habits-tip">✨ Complete all habits to build momentum</p>
+    </article>
+  )
+}

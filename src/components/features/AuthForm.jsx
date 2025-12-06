@@ -7,6 +7,7 @@ export function AuthForm({ initialMode = 'signin' }) {
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn, signUp } = useAuth()
 
@@ -15,7 +16,7 @@ export function AuthForm({ initialMode = 'signin' }) {
     setLoading(true)
     
     const { error } = isSignUp 
-      ? await signUp(email, password)
+      ? await signUp(email, password, name)
       : await signIn(email, password)
     
     if (error) {
@@ -28,6 +29,7 @@ export function AuthForm({ initialMode = 'signin' }) {
     setIsSignUp(!isSignUp)
     setEmail('')
     setPassword('')
+    setName('')
   }
 
   return (
@@ -46,6 +48,18 @@ export function AuthForm({ initialMode = 'signin' }) {
       <main className="auth-main">
         <div className="auth-card">
           <form onSubmit={handleSubmit} className="auth-form-clean">
+            {isSignUp && (
+              <Input
+                id="name"
+                type="text"
+                label="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
+            )}
+
             <Input
               id="email"
               type="email"

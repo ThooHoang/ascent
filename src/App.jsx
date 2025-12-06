@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
 import SplashPage from './pages/SplashPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import { useAuth } from './hooks/useAuth.js'
@@ -40,6 +41,10 @@ function App() {
         <Route 
           path="/dashboard" 
           element={user ? <HomePage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/profile" 
+          element={user ? <ProfilePage /> : <Navigate to="/" replace />} 
         />
         
         {/* Catch all - redirect based on auth status */}
