@@ -6,7 +6,12 @@ import './styles/global.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/*
+      Use a basename so routes work when the app is served from
+      https://<username>.github.io/ascent/ instead of the domain root.
+      This must match both your GitHub repo name and the Vite `base`.
+    */}
+    <BrowserRouter basename="/ascent">
       <App />
     </BrowserRouter>
   </React.StrictMode>
