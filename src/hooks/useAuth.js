@@ -103,18 +103,47 @@ export function useAuth() {
   const updateProfile = async (updates) => {
     if (!user?.id) return { error: 'No user' }
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('user_id', user.id)
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', user.id)
+        .select()
 
-    if (!error) {
-      setProfile(data)
+      if (error) {
+        console.error('Supabase update error:', error)
+        return { data: null, error }
+      }
+
+      if (data && data.length > 0) {
+        const updatedProfile = data[0]
+        setProfile(updatedProfile)
+        // Force a re-render by triggering storage event
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: `profile-${user.id}`,
+          newValue: JSON.stringify(updatedProfile),
+          url: window.location.href,
+        }))
+        return { data: updatedProfile, error: null }
+      }
+
+      // If no error but also no data, fetch the profile again
+      const { data: freshData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!fetchError && freshData) {
+        setProfile(freshData)
+        return { data: freshData, error: null }
+      }
+
+      return { data: null, error: fetchError || new Error('No data returned') }
+    } catch (err) {
+      console.error('Error updating profile:', err)
+      return { data: null, error: err }
     }
-
-    return { data, error }
   }
 
   return {

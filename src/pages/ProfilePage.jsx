@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Home, Dumbbell, ListTodo, User as UserIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
@@ -11,16 +12,38 @@ function ProfilePage() {
   const { user, profile, signOut, updateProfile } = useAuth()
   
   const [isEditing, setIsEditing] = useState(false)
-  const [name, setName] = useState(profile?.name || '')
+  const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  // Sync name when profile updates
+  useEffect(() => {
+    if (profile?.name) {
+      setName(profile.name)
+    }
+  }, [profile?.name])
 
   const handleSave = async () => {
+    if (!name.trim()) {
+      setErrorMsg('Name cannot be empty')
+      return
+    }
     setSaving(true)
-    const { error } = await updateProfile({ name })
+    setErrorMsg('')
+    const { error } = await updateProfile({ name: name.trim() })
     if (!error) {
       setIsEditing(false)
+      setErrorMsg('')
+    } else {
+      console.error('Save error:', error)
+      setErrorMsg(error?.message || 'Failed to save name. Please try again.')
     }
     setSaving(false)
+  }
+
+  const handleCancel = () => {
+    setName(profile?.name || '')
+    setIsEditing(false)
   }
 
   const handleSignOut = async () => {
@@ -50,9 +73,11 @@ function ProfilePage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
+                autoFocus
               />
+              {errorMsg && <p className="error-message">{errorMsg}</p>}
               <div className="profile-edit-actions">
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button onClick={handleCancel}>Cancel</Button>
                 <Button variant="primary" onClick={handleSave} disabled={saving}>
                   {saving ? 'Saving...' : 'Save'}
                 </Button>
@@ -62,7 +87,7 @@ function ProfilePage() {
             <>
               <h1 className="profile-name-title">{profile?.name || 'User'}</h1>
               <p className="profile-email">{user?.email}</p>
-              <Button size="default" onClick={() => { setName(profile?.name || ''); setIsEditing(true); }}>
+              <Button size="default" onClick={() => setIsEditing(true)}>
                 Edit name
               </Button>
             </>
