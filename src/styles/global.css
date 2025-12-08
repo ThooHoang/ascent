@@ -908,6 +908,10 @@ body {
   color: var(--color-primary);
 }
 
+.action-btn.full-width {
+  grid-column: 1 / -1;
+}
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: 1fr;

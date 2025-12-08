@@ -161,6 +161,11 @@ function HomePage() {
           </div>
         </section>
 
+        <section className="quote-card">
+          <p className="quote-text">"{getQuote()}"</p>
+          <p className="quote-label">Quote of the day</p>
+        </section>
+
         <section className="quick-stats">
           <div className="stat-pill">
             <p className="stat-value">{stats.habitsLeft}</p>
@@ -176,24 +181,8 @@ function HomePage() {
           </div>
         </section>
 
-        <section className="quote-card">
-          <p className="quote-text">"{getQuote()}"</p>
-          <p className="quote-label">Quote of the day</p>
-        </section>
-
-        <section className="quick-action-buttons">
-          <div className="action-btn-pair">
-            <button className="action-btn" type="button" onClick={() => navigate('/habits')}>
-              <span className="action-icon">📋</span>
-              <span className="action-text">Habits</span>
-              <span className="action-count">{stats.habitsLeft}</span>
-            </button>
-            <button className="action-btn" type="button" onClick={() => navigate('/sleep')}>
-              <span className="action-icon">😴</span>
-              <span className="action-text">Sleep log</span>
-              <span className="action-count">Quick log</span>
-            </button>
-          </div>
+        <section className="dashboard-widgets">
+          <MiniHabitsWidget />
         </section>
 
         <section className="dashboard-cards">
@@ -201,8 +190,12 @@ function HomePage() {
           <WeightProgress />
         </section>
 
-        <section className="dashboard-widgets">
-          <MiniHabitsWidget />
+        <section className="quick-action-buttons">
+          <button className="action-btn full-width" type="button" onClick={() => navigate('/sleep')}>
+            <span className="action-icon">😴</span>
+            <span className="action-text">Sleep log</span>
+            <span className="action-count">Quick log</span>
+          </button>
         </section>
       </main>
 
