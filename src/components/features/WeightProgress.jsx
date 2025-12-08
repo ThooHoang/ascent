@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { Camera, X } from 'lucide-react'
 
 export function WeightProgress() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const storageKey = user?.id ? `progress-${user.id}` : 'progress-guest'
 
@@ -83,6 +85,7 @@ export function WeightProgress() {
     return weights.map((w, i) => ({
       index: i,
       weight: w,
+      date: entries.filter(e => e.weight)[i]?.date,
       normalized: ((w - minWeight) / range) * 100,
     }))
   }
@@ -163,7 +166,14 @@ export function WeightProgress() {
         <div>
           <p className="section-title">Weight</p>
           <div className="weight-display">
-            <p className="weight-value">{currentWeight ? `${currentWeight.toFixed(1)} kg` : '—'}</p>
+            <button 
+              className="weight-value clickable" 
+              type="button"
+              onClick={() => setIsEditing(true)}
+              title="Click to update weight"
+            >
+              {currentWeight ? `${currentWeight.toFixed(1)} kg` : '—'}
+            </button>
             {delta && (
               <p className={`weight-delta ${Number(delta) > 0 ? 'delta-up' : 'delta-down'}`}>
                 {Number(delta) > 0 ? '+' : ''}{delta} kg
@@ -171,46 +181,12 @@ export function WeightProgress() {
             )}
           </div>
         </div>
-        <button className="text-link" type="button" onClick={() => setIsEditing(true)}>
-          Update
+        <button className="text-link" type="button" onClick={() => navigate('/weight')}>
+          View details
         </button>
-      </div>
-
-      {points.length > 0 ? (
-        <div className="weight-chart">
-          <svg viewBox="0 0 100 60" className="chart-svg" preserveAspectRatio="none">
-            {[0, 25, 50, 75, 100].map(y => (
-              <line key={`grid-${y}`} x1="0" y1={y} x2="100" y2={y} className="chart-grid-line" />
-            ))}
-
-            <polyline
-              points={points.map(p => `${(p.index / (points.length - 1 || 1)) * 100},${100 - p.normalized}`).join(' ')}
-              className="chart-line"
-              fill="none"
-              vectorEffect="non-scaling-stroke"
-            />
-
-            {points.map(p => (
-              <circle
-                key={`point-${p.index}`}
-                cx={(p.index / (points.length - 1 || 1)) * 100}
-                cy={100 - p.normalized}
-                r="1.5"
-                className="chart-point"
-              />
-            ))}
-          </svg>
-        </div>
-      ) : (
-        <p className="chart-empty">No data yet. Log weight to see progress.</p>
-      )}
-
-      <div className="weight-legend">
-        <p className="legend-range">
-          {minWeight.toFixed(0)} — {maxWeight.toFixed(0)} kg
-        </p>
       </div>
     </div>
   )
 }
+
 

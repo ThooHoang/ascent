@@ -7,6 +7,7 @@ import OnboardingPage from './pages/OnboardingPage.jsx'
 import SleepPage from './pages/SleepPage.jsx'
 import HabitsPage from './pages/HabitsPage.jsx'
 import WorkoutsPage from './pages/WorkoutsPage.jsx'
+import WeightOverviewPage from './pages/WeightOverviewPage.jsx'
 import { useAuth } from './hooks/useAuth.js'
 
 function App() {
@@ -60,6 +61,10 @@ function App() {
         <Route 
           path="/profile" 
           element={user ? <ProfilePage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/weight" 
+          element={user ? <WeightOverviewPage /> : <Navigate to="/" replace />} 
         />
         
         {/* Catch all - redirect based on auth status */}
