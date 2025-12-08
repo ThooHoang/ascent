@@ -191,10 +191,18 @@ function HomePage() {
         </section>
 
         <section className="quick-action-buttons">
-          <button className="action-btn full-width" type="button" onClick={() => navigate('/sleep')}>
-            <span className="action-icon">😴</span>
-            <span className="action-text">Sleep log</span>
-            <span className="action-count">Quick log</span>
+          <button className="sleep-log-card" type="button" onClick={() => navigate('/sleep')}>
+            <div className="sleep-card-content">
+              <div className="sleep-card-header">
+                <span className="sleep-icon">😴</span>
+                <span className="sleep-title">Sleep Log</span>
+              </div>
+              <p className="sleep-card-subtitle">Track your rest & improve your health</p>
+              <div className="sleep-card-footer">
+                <span className="sleep-cta">Log now →</span>
+                <span className="sleep-value">{stats.sleepHours}h</span>
+              </div>
+            </div>
           </button>
         </section>
       </main>
