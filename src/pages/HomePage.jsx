@@ -26,33 +26,49 @@ function HomePage() {
   const loadStats = async (dateStr = null) => {
     const targetDate = dateStr || new Date().toISOString().split('T')[0]
     
-    // Load habits data
     const storageKey = user?.id ? `custom-habits-${user.id}` : 'custom-habits-guest'
     const customHabits = localStorage.getItem(storageKey)
-    let habitsLeft = 4 // default habits
-    if (customHabits) {
+    const totalHabits = (() => {
+      if (!customHabits) return 4
       try {
         const parsed = JSON.parse(customHabits)
-        habitsLeft = 4 + parsed.length // default + custom
+        return 4 + parsed.length
       } catch {
-        // ignore
+        return 4
       }
-    }
+    })()
 
-    // Load completions for selected date
-    const completionsKey = `habit-completions-${user?.id}`
-    const completions = localStorage.getItem(completionsKey)
-    if (completions) {
+    let completedCount = 0
+    if (user?.id) {
       try {
-        const parsed = JSON.parse(completions)
-        const dateCompletions = parsed.filter(c => c.date === targetDate && c.completed)
-        habitsLeft = Math.max(0, habitsLeft - dateCompletions.length)
+        const { data, error } = await supabase
+          .from('habit_completions')
+          .select('habit_id, completed')
+          .eq('user_id', user.id)
+          .eq('date', targetDate)
+          .eq('completed', true)
+
+        if (!error && data) {
+          completedCount = data.length
+        }
       } catch {
-        // ignore
+        completedCount = 0
+      }
+    } else {
+      const completionsKey = 'habit-completions-guest'
+      const completions = localStorage.getItem(completionsKey)
+      if (completions) {
+        try {
+          const parsed = JSON.parse(completions)
+          completedCount = parsed.filter(c => c.date === targetDate && c.completed).length
+        } catch {
+          completedCount = 0
+        }
       }
     }
 
-    // Load sleep entry from Supabase for selected date
+    const habitsLeft = Math.max(0, totalHabits - completedCount)
+
     let sleepHours = 0
     if (user?.id) {
       try {
@@ -71,16 +87,19 @@ function HomePage() {
       }
     }
 
-    // Load best streak
-    const streakKey = `habit-streaks-${user?.id}`
-    const streaks = localStorage.getItem(streakKey)
     let bestStreak = 0
-    if (streaks) {
+    if (user?.id) {
       try {
-        const parsed = JSON.parse(streaks)
-        bestStreak = Math.max(...parsed.map(s => s.best_streak || 0), 0)
+        const { data, error } = await supabase
+          .from('habit_streaks')
+          .select('best_streak')
+          .eq('user_id', user.id)
+
+        if (!error && data?.length) {
+          bestStreak = Math.max(...data.map(s => s.best_streak || 0), 0)
+        }
       } catch {
-        // ignore
+        bestStreak = 0
       }
     }
 
@@ -188,7 +207,7 @@ function HomePage() {
         </section>
 
         <section className="dashboard-widgets">
-          <MiniHabitsWidget />
+          <MiniHabitsWidget selectedDate={selectedDate} />
         </section>
 
         <section className="dashboard-cards">

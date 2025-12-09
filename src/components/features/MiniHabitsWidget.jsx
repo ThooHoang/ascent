@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 
-export function MiniHabitsWidget() {
+export function MiniHabitsWidget({ selectedDate: selectedDateProp }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [habits, setHabits] = useState([])
   const [completions, setCompletions] = useState({})
 
-  useEffect(() => {
-    if (!user?.id) return
+  const today = new Date().toISOString().split('T')[0]
+  const selectedDate = selectedDateProp || today
 
-    // Load default habits
+  useEffect(() => {
     const DEFAULT_HABITS = [
       { id: 'water', name: '💧 Water', emoji: '💧' },
       { id: 'exercise', name: '🏃 Exercise', emoji: '🏃' },
@@ -19,8 +20,7 @@ export function MiniHabitsWidget() {
       { id: 'meditation', name: '🧘 Meditation', emoji: '🧘' },
     ]
 
-    // Load custom habits
-    const storageKey = `custom-habits-${user.id}`
+    const storageKey = user?.id ? `custom-habits-${user.id}` : 'custom-habits-guest'
     const customHabits = localStorage.getItem(storageKey)
     let allHabits = DEFAULT_HABITS
     if (customHabits) {
@@ -32,32 +32,95 @@ export function MiniHabitsWidget() {
       }
     }
     setHabits(allHabits.slice(0, 6))
-
-    // Load today's completions
-    const today = new Date().toISOString().split('T')[0]
-    const completionsKey = `habit-completions-${user.id}`
-    const stored = localStorage.getItem(completionsKey)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        const completed = {}
-        parsed.forEach(item => {
-          if (item.date === today) {
-            completed[item.habit_id] = item.completed
-          }
-        })
-        setCompletions(completed)
-      } catch {
-        // ignore
-      }
-    }
   }, [user?.id])
 
-  const toggleHabit = (habitId) => {
-    setCompletions(prev => ({
-      ...prev,
-      [habitId]: !prev[habitId]
-    }))
+  useEffect(() => {
+    const fetchCompletions = async () => {
+      if (!user?.id) {
+        // Guest fallback: read from localStorage by date
+        const guestKey = 'habit-completions-guest'
+        const stored = localStorage.getItem(guestKey)
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            const completed = {}
+            parsed.forEach(item => {
+              if (item.date === selectedDate) {
+                completed[item.habit_id] = item.completed
+              }
+            })
+            setCompletions(completed)
+          } catch {
+            setCompletions({})
+          }
+        } else {
+          setCompletions({})
+        }
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('habit_completions')
+          .select('habit_id, completed')
+          .eq('user_id', user.id)
+          .eq('date', selectedDate)
+
+        if (!error && data) {
+          const completed = {}
+          data.forEach(item => {
+            completed[item.habit_id] = item.completed
+          })
+          setCompletions(completed)
+        }
+      } catch {
+        setCompletions({})
+      }
+    }
+
+    fetchCompletions()
+  }, [user?.id, selectedDate])
+
+  const toggleHabit = async (habitId) => {
+    const newState = !completions[habitId]
+
+    if (!user?.id) {
+      // Guest fallback: store in localStorage keyed by date
+      const guestKey = 'habit-completions-guest'
+      const stored = localStorage.getItem(guestKey)
+      let parsed = []
+      try {
+        parsed = stored ? JSON.parse(stored) : []
+      } catch {
+        parsed = []
+      }
+      const filtered = parsed.filter(item => !(item.habit_id === habitId && item.date === selectedDate))
+      filtered.push({ habit_id: habitId, date: selectedDate, completed: newState })
+      localStorage.setItem(guestKey, JSON.stringify(filtered))
+      setCompletions(prev => ({ ...prev, [habitId]: newState }))
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('habit_completions')
+        .upsert(
+          {
+            user_id: user.id,
+            habit_id: habitId,
+            date: selectedDate,
+            completed: newState,
+            completed_at: newState ? new Date().toISOString() : null,
+          },
+          { onConflict: 'user_id,habit_id,date' }
+        )
+
+      if (!error) {
+        setCompletions(prev => ({ ...prev, [habitId]: newState }))
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const completedCount = Object.values(completions).filter(Boolean).length

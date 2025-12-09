@@ -19,15 +19,46 @@ export function SmartHabits() {
   const [newHabitName, setNewHabitName] = useState('')
   const [newHabitTarget, setNewHabitTarget] = useState(10)
 
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false)
+      const guestKey = 'habit-completions-guest'
+      const stored = localStorage.getItem(guestKey)
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          const completed = {}
+          parsed.forEach(item => {
+            if (item.date === selectedDate) {
+              completed[item.habit_id] = item.completed
+            }
+          })
+          setCompletions(completed)
+        } catch {
+          setCompletions({})
+        }
+      } else {
+        setCompletions({})
+      }
+    }
+  }, [user?.id, selectedDate])
+
   const storageKey = user?.id ? `custom-habits-${user.id}` : 'custom-habits-guest'
 
   useEffect(() => {
     if (user?.id) {
       loadHabits()
-      fetchTodayCompletions()
+      fetchCompletionsForDate(selectedDate)
       fetchStreaks()
     }
   }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
+    fetchCompletionsForDate(selectedDate)
+  }, [user?.id, selectedDate])
 
   const loadHabits = () => {
     const stored = localStorage.getItem(storageKey)
@@ -49,14 +80,13 @@ export function SmartHabits() {
     localStorage.setItem(storageKey, JSON.stringify(custom))
   }
 
-  const fetchTodayCompletions = async () => {
+  const fetchCompletionsForDate = async (dateStr) => {
     try {
-      const today = new Date().toISOString().split('T')[0]
       const { data } = await supabase
         .from('habit_completions')
         .select('habit_id, completed')
         .eq('user_id', user.id)
-        .eq('date', today)
+        .eq('date', dateStr)
 
       if (data) {
         const completed = {}
@@ -96,17 +126,14 @@ export function SmartHabits() {
     const newState = !isCompleted
 
     try {
-      const today = new Date().toISOString().split('T')[0]
-      
       if (newState) {
-        // Mark as completed
         const { error } = await supabase
           .from('habit_completions')
           .upsert(
             {
               user_id: user.id,
               habit_id: habitId,
-              date: today,
+              date: selectedDate,
               completed: true,
               completed_at: new Date().toISOString(),
             },
@@ -118,17 +145,16 @@ export function SmartHabits() {
           await updateStreak(habitId, true)
         }
       } else {
-        // Mark as incomplete
         const { error } = await supabase
           .from('habit_completions')
           .update({ completed: false })
           .eq('user_id', user.id)
           .eq('habit_id', habitId)
-          .eq('date', today)
+          .eq('date', selectedDate)
 
         if (!error) {
           setCompletions(prev => ({ ...prev, [habitId]: false }))
-          await reduceStreakOnUndo(habitId, today)
+          await reduceStreakOnUndo(habitId, selectedDate)
         }
       }
     } catch (err) {
@@ -138,7 +164,7 @@ export function SmartHabits() {
 
   const updateStreak = async (habitId, isCompleting) => {
     try {
-      const today = new Date()
+      const targetDate = new Date(selectedDate)
       
       let { data: streakData } = await supabase
         .from('habit_streaks')
@@ -152,7 +178,7 @@ export function SmartHabits() {
       const lastCompleted = streakData?.last_completed_date ? new Date(streakData.last_completed_date) : null
 
       let newStreak = currentStreak
-      const daysDiff = lastCompleted ? Math.floor((today - lastCompleted) / (1000 * 60 * 60 * 24)) : 0
+      const daysDiff = lastCompleted ? Math.floor((targetDate - lastCompleted) / (1000 * 60 * 60 * 24)) : 0
 
       if (isCompleting) {
         if (daysDiff === 1 || !lastCompleted) {
@@ -172,7 +198,7 @@ export function SmartHabits() {
             habit_id: habitId,
             current_streak: newStreak,
             best_streak: newBestStreak,
-            last_completed_date: today.toISOString(),
+            last_completed_date: targetDate.toISOString(),
           },
           { onConflict: 'user_id,habit_id' }
         )
@@ -193,7 +219,7 @@ export function SmartHabits() {
     }
   }
 
-  const reduceStreakOnUndo = async (habitId, todayString) => {
+  const reduceStreakOnUndo = async (habitId, dateString) => {
     try {
       const { data, error } = await supabase
         .from('habit_streaks')
@@ -210,11 +236,11 @@ export function SmartHabits() {
       if (!data) return
 
       const lastDate = data.last_completed_date ? data.last_completed_date.split('T')[0] : null
-      const newCurrent = lastDate === todayString ? Math.max(0, (data.current_streak || 1) - 1) : data.current_streak || 0
+      const newCurrent = lastDate === dateString ? Math.max(0, (data.current_streak || 1) - 1) : data.current_streak || 0
       const updated = {
         current_streak: newCurrent,
         best_streak: data.best_streak || 0,
-        last_completed_date: lastDate === todayString ? null : data.last_completed_date,
+        last_completed_date: lastDate === dateString ? null : data.last_completed_date,
       }
 
       const { error: updateError } = await supabase
@@ -259,6 +285,18 @@ export function SmartHabits() {
   const completedCount = Object.values(completions).filter(Boolean).length
   const completionPercentage = habits.length ? Math.round((completedCount / habits.length) * 100) : 0
 
+  const changeDate = (delta) => {
+    const d = new Date(selectedDate)
+    d.setDate(d.getDate() + delta)
+    setSelectedDate(d.toISOString().split('T')[0])
+  }
+
+  const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
   if (loading) {
     return <div className="habits-loading">Loading habits...</div>
   }
@@ -269,6 +307,11 @@ export function SmartHabits() {
         <div>
           <p className="card-label">Daily Habits</p>
           <p className="card-value">{completedCount}/{habits.length}</p>
+        </div>
+        <div className="habits-date-switcher">
+          <button className="calendar-nav-btn" type="button" onClick={() => changeDate(-1)} aria-label="Previous day">◀</button>
+          <span className="habits-date-label">{formattedDate}</span>
+          <button className="calendar-nav-btn" type="button" onClick={() => changeDate(1)} aria-label="Next day">▶</button>
         </div>
         <div className="habits-badge">{completionPercentage}%</div>
       </div>
