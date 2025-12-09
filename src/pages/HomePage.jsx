@@ -160,7 +160,13 @@ function HomePage() {
       "Every day is a fresh start.",
       "Build momentum, one habit at a time.",
     ]
-    return quotes[Math.floor(Math.random() * quotes.length)]
+    const key = selectedDate || new Date().toISOString().split('T')[0]
+    let hash = 0
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+    }
+    const idx = hash % quotes.length
+    return quotes[idx]
   }
 
   return (
