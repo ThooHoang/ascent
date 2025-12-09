@@ -1954,100 +1954,6 @@ body {
   color: var(--color-text-secondary);
 }
 
-/* Weight Progress Section - Simple Visualization */
-.weight-progress-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.progress-trend {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  justify-content: space-between;
-}
-
-.trend-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  flex: 1;
-}
-
-.trend-label {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.trend-value {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.trend-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-surface);
-}
-
-.arrow-icon {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.arrow-icon.up {
-  color: #DC2626;
-  transform: rotate(180deg);
-}
-
-.arrow-icon.down {
-  color: #16A34A;
-}
-
-.weight-stats-mini {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
-}
-
-.stat-mini {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-2);
-  background: var(--color-bg-soft);
-  border-radius: var(--radius-md);
-  gap: var(--space-1);
-}
-
-.stat-mini-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-weight: 600;
-}
-
-.stat-mini-value {
-  font-size: var(--font-size-base);
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
 .weight-legend {
   border-top: 1px solid var(--border-color);
   padding-top: var(--space-2);
@@ -2484,11 +2390,34 @@ body {
   transform: scale(0.95);
 }
 
+.calendar-nav-btn {
+  background: var(--color-bg-soft);
+  border: 1px solid var(--border-color);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--color-text-primary);
+}
+
+.calendar-nav-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.calendar-nav-btn:active {
+  transform: scale(0.95);
+}
+
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
+  gap: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .calendar-weekday {
@@ -2496,13 +2425,13 @@ body {
   font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--color-text-secondary);
-  padding: var(--space-1);
+  padding: 2px;
 }
 
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .calendar-day {
@@ -2533,6 +2462,87 @@ body {
 
 .calendar-day.other-month {
   opacity: 0.4;
+}
+
+.calendar-day.selected {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+  border: 1px solid var(--color-primary);
+}
+
+/* Calendar Modal Overlay */
+.calendar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.calendar-modal-content {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Calendar Picker Component */
+.calendar-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-bg-primary);
+}
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.calendar-confirm {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.calendar-confirm:active {
+  background: #15A34A;
+  transform: scale(0.98);
 }
 
 /* Mini Habits Widget */

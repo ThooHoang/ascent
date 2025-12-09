@@ -14,6 +14,7 @@ function HomePage() {
   const location = useLocation()
   const { user, profile } = useAuth()
   const [showCalendar, setShowCalendar] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [stats, setStats] = useState({
     habitsLeft: 0,
     sleepHours: 0,
@@ -22,8 +23,8 @@ function HomePage() {
 
   const userName = profile?.name || user?.email?.split('@')[0] || 'there'
 
-  const loadStats = async () => {
-    const today = new Date().toISOString().split('T')[0]
+  const loadStats = async (dateStr = null) => {
+    const targetDate = dateStr || new Date().toISOString().split('T')[0]
     
     // Load habits data
     const storageKey = user?.id ? `custom-habits-${user.id}` : 'custom-habits-guest'
@@ -38,20 +39,20 @@ function HomePage() {
       }
     }
 
-    // Load today's completions to subtract from habits left
+    // Load completions for selected date
     const completionsKey = `habit-completions-${user?.id}`
     const completions = localStorage.getItem(completionsKey)
     if (completions) {
       try {
         const parsed = JSON.parse(completions)
-        const todayCompletions = parsed.filter(c => c.date === today && c.completed)
-        habitsLeft = Math.max(0, habitsLeft - todayCompletions.length)
+        const dateCompletions = parsed.filter(c => c.date === targetDate && c.completed)
+        habitsLeft = Math.max(0, habitsLeft - dateCompletions.length)
       } catch {
         // ignore
       }
     }
 
-    // Load today's sleep entry from Supabase
+    // Load sleep entry from Supabase for selected date
     let sleepHours = 0
     if (user?.id) {
       try {
@@ -59,14 +60,14 @@ function HomePage() {
           .from('sleep_logs')
           .select('hours')
           .eq('user_id', user.id)
-          .eq('date', today)
+          .eq('date', targetDate)
           .single()
 
         if (!error && data) {
           sleepHours = data.hours || 0
         }
       } catch (err) {
-        // ignore - no sleep log for today
+        // ignore - no sleep log for this date
       }
     }
 
@@ -86,6 +87,11 @@ function HomePage() {
     setStats({ habitsLeft, sleepHours, bestStreak })
   }
 
+  const handleSelectDate = (dateStr) => {
+    setSelectedDate(dateStr)
+    loadStats(dateStr)
+  }
+
   useEffect(() => {
     loadStats()
   }, [user?.id, profile?.name])
@@ -93,11 +99,11 @@ function HomePage() {
   // Listen for storage changes and refetch stats
   useEffect(() => {
     const handleStorageChange = () => {
-      loadStats()
+      loadStats(selectedDate)
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [user?.id])
+  }, [user?.id, selectedDate])
 
   // Subscribe to real-time sleep log updates
   useEffect(() => {
@@ -244,17 +250,12 @@ function HomePage() {
 
       {/* Calendar Modal */}
       {showCalendar && (
-        <div className="modal-overlay" onClick={() => setShowCalendar(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="modal-close"
-              onClick={() => setShowCalendar(false)}
-              type="button"
-              aria-label="Close calendar"
-            >
-              <X size={24} />
-            </button>
-            <MiniCalendar />
+        <div className="calendar-modal-overlay" onClick={() => setShowCalendar(false)}>
+          <div className="calendar-modal-content" onClick={(e) => e.stopPropagation()}>
+            <MiniCalendar 
+              onSelectDate={handleSelectDate}
+              onClose={() => setShowCalendar(false)}
+            />
           </div>
         </div>
       )}
