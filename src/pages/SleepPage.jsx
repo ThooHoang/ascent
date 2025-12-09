@@ -4,15 +4,14 @@ import { Home, Dumbbell, ListTodo, User } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
-
-const todayString = () => new Date().toISOString().split('T')[0]
+import { useSelectedDate } from '../contexts/DateContext'
 
 function SleepPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-
-  const [date, setDate] = useState(todayString())
+  const { selectedDate, setSelectedDate } = useSelectedDate()
+  const [date, setDate] = useState(selectedDate)
   const [hours, setHours] = useState(7.5)
   const [quality, setQuality] = useState('good')
   const [logs, setLogs] = useState([])
@@ -21,11 +20,11 @@ function SleepPage() {
 
   useEffect(() => {
     if (user?.id) {
-      fetchLogs()
+      fetchLogs(selectedDate)
     }
-  }, [user?.id])
+  }, [user?.id, selectedDate])
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (targetDate = selectedDate) => {
     try {
       const { data, error } = await supabase
         .from('sleep_logs')
@@ -36,11 +35,15 @@ function SleepPage() {
 
       if (!error && data) {
         setLogs(data)
-        const todayLog = data.find(log => log.date === todayString())
-        if (todayLog) {
-          setHours(todayLog.hours)
-          setQuality(todayLog.quality || 'good')
-          setDate(todayLog.date)
+        const currentLog = data.find(log => log.date === targetDate)
+        if (currentLog) {
+          setHours(currentLog.hours)
+          setQuality(currentLog.quality || 'good')
+          setDate(currentLog.date)
+        } else {
+          setDate(targetDate)
+          setHours(7.5)
+          setQuality('good')
         }
       }
     } catch (err) {
@@ -66,7 +69,7 @@ function SleepPage() {
         )
 
       if (!error) {
-        await fetchLogs()
+        await fetchLogs(date)
       }
     } catch (err) {
       console.error('Error saving sleep log:', err)
@@ -77,6 +80,7 @@ function SleepPage() {
 
   const handleSelectDate = (newDate) => {
     setDate(newDate)
+    setSelectedDate(newDate)
     const existing = logs.find(log => log.date === newDate)
     if (existing) {
       setHours(existing.hours)

@@ -1,9 +1,24 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-export function MiniCalendar({ onSelectDate, onClose }) {
-  const [date, setDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+const formatLocalDate = (d) => {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export function MiniCalendar({ onSelectDate, onClose, value }) {
+  const initialDate = value ? new Date(value) : new Date()
+  const [date, setDate] = useState(initialDate)
+  const [selectedDate, setSelectedDate] = useState(formatLocalDate(initialDate))
+
+  useEffect(() => {
+    if (!value) return
+    const d = new Date(value)
+    setDate(d)
+    setSelectedDate(formatLocalDate(d))
+  }, [value])
 
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
   const months = [
@@ -34,22 +49,14 @@ export function MiniCalendar({ onSelectDate, onClose }) {
     setDate(new Date(date.getFullYear(), date.getMonth() + 1))
   }
 
-  const isToday = (d) => {
-    const today = new Date()
-    return d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-  }
+  const isToday = (d) => formatLocalDate(d) === formatLocalDate(new Date())
 
   const isCurrentMonth = (d) => d.getMonth() === date.getMonth()
 
-  const isSelected = (d) => {
-    const dateStr = d.toISOString().split('T')[0]
-    return dateStr === selectedDate
-  }
+  const isSelected = (d) => formatLocalDate(d) === selectedDate
 
   const handleSelectDay = (d) => {
-    setSelectedDate(d.toISOString().split('T')[0])
+    setSelectedDate(formatLocalDate(d))
   }
 
   const handleConfirm = () => {

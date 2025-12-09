@@ -1,22 +1,19 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Home, Dumbbell, ListTodo, User } from 'lucide-react'
 import { SmartHabits } from '../components/features/SmartHabits'
+import { useSelectedDate } from '../contexts/DateContext'
 
 function HabitsPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { selectedDate } = useSelectedDate()
 
   return (
     <div className="dashboard-page">
       <main className="dashboard-main">
-        <section className="hero">
-          <div>
-            <p className="hero-eyebrow">Habits</p>
-            <h1 className="hero-title">Dial in your routine</h1>
-            <p className="hero-subtitle">Add custom habits and keep streaks alive.</p>
-          </div>
-        </section>
-
+        <p className="greeting-date" style={{ marginBottom: '12px' }}>
+          {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
         <SmartHabits />
       </main>
 

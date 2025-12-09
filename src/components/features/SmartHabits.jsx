@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { useSelectedDate } from '../../contexts/DateContext'
 
 const DEFAULT_HABITS = [
   { id: 'water', name: '💧 Drink water', target: 8 },
@@ -19,7 +20,7 @@ export function SmartHabits() {
   const [newHabitName, setNewHabitName] = useState('')
   const [newHabitTarget, setNewHabitTarget] = useState(10)
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const { selectedDate } = useSelectedDate()
 
   useEffect(() => {
     if (!user?.id) {
@@ -285,17 +286,6 @@ export function SmartHabits() {
   const completedCount = Object.values(completions).filter(Boolean).length
   const completionPercentage = habits.length ? Math.round((completedCount / habits.length) * 100) : 0
 
-  const changeDate = (delta) => {
-    const d = new Date(selectedDate)
-    d.setDate(d.getDate() + delta)
-    setSelectedDate(d.toISOString().split('T')[0])
-  }
-
-  const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
 
   if (loading) {
     return <div className="habits-loading">Loading habits...</div>
@@ -307,11 +297,6 @@ export function SmartHabits() {
         <div>
           <p className="card-label">Daily Habits</p>
           <p className="card-value">{completedCount}/{habits.length}</p>
-        </div>
-        <div className="habits-date-switcher">
-          <button className="calendar-nav-btn" type="button" onClick={() => changeDate(-1)} aria-label="Previous day">◀</button>
-          <span className="habits-date-label">{formattedDate}</span>
-          <button className="calendar-nav-btn" type="button" onClick={() => changeDate(1)} aria-label="Next day">▶</button>
         </div>
         <div className="habits-badge">{completionPercentage}%</div>
       </div>

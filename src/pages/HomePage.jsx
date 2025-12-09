@@ -8,18 +8,19 @@ import { TodayTraining } from '../components/features/TodayTraining'
 import { WeightProgress } from '../components/features/WeightProgress'
 import { MiniCalendar } from '../components/features/MiniCalendar'
 import { MiniHabitsWidget } from '../components/features/MiniHabitsWidget'
+import { useSelectedDate } from '../contexts/DateContext'
 
 function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, profile } = useAuth()
   const [showCalendar, setShowCalendar] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [stats, setStats] = useState({
     habitsLeft: 0,
     sleepHours: 0,
     bestStreak: 0,
   })
+  const { selectedDate, setSelectedDate } = useSelectedDate()
 
   const userName = profile?.name || user?.email?.split('@')[0] || 'there'
 
@@ -108,12 +109,11 @@ function HomePage() {
 
   const handleSelectDate = (dateStr) => {
     setSelectedDate(dateStr)
-    loadStats(dateStr)
   }
 
   useEffect(() => {
-    loadStats()
-  }, [user?.id, profile?.name])
+    loadStats(selectedDate)
+  }, [user?.id, profile?.name, selectedDate])
 
   // Listen for storage changes and refetch stats
   useEffect(() => {
@@ -174,6 +174,7 @@ function HomePage() {
             <div>
               <p className="greeting-text">Good morning,</p>
               <h1 className="greeting-name">{userName}</h1>
+              <p className="greeting-date">{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
             </div>
           </div>
           <div className="header-icons">
@@ -272,6 +273,7 @@ function HomePage() {
         <div className="calendar-modal-overlay" onClick={() => setShowCalendar(false)}>
           <div className="calendar-modal-content" onClick={(e) => e.stopPropagation()}>
             <MiniCalendar 
+              value={selectedDate}
               onSelectDate={handleSelectDate}
               onClose={() => setShowCalendar(false)}
             />
