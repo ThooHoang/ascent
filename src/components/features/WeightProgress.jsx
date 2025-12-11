@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
+import { useSelectedDate } from '../../contexts/DateContext'
 import { Camera, X } from 'lucide-react'
 
 export function WeightProgress() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedDate } = useSelectedDate()
   const storageKey = user?.id ? `progress-${user.id}` : 'progress-guest'
 
   const [entries, setEntries] = useState([])
@@ -13,26 +16,54 @@ export function WeightProgress() {
   const [weight, setWeight] = useState('')
   const [photoPreview, setPhotoPreview] = useState('')
   const [photoFile, setPhotoFile] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadEntries()
-  }, [storageKey])
+  }, [user?.id, storageKey, selectedDate])
 
-  const loadEntries = () => {
-    const stored = localStorage.getItem(storageKey)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        setEntries(parsed)
-        const today = new Date().toISOString().split('T')[0]
-        const todayEntry = parsed.find(e => e.date === today)
-        if (todayEntry?.weight) {
-          setWeight(todayEntry.weight.toString())
-          setPhotoPreview(todayEntry.photo || '')
+  const loadEntries = async () => {
+    try {
+      setLoading(true)
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('weight_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+
+        if (!error && data) {
+          setEntries(data)
+          const todayEntry = data.find(e => e.date === selectedDate)
+          if (todayEntry?.weight) {
+            setWeight(todayEntry.weight.toString())
+            setPhotoPreview(todayEntry.photo_url || '')
+          } else {
+            setWeight('')
+            setPhotoPreview('')
+          }
         }
-      } catch {
-        setEntries([])
+      } else {
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            setEntries(parsed)
+            const todayEntry = parsed.find(e => e.date === selectedDate)
+            if (todayEntry?.weight) {
+              setWeight(todayEntry.weight.toString())
+              setPhotoPreview(todayEntry.photo || '')
+            } else {
+              setWeight('')
+              setPhotoPreview('')
+            }
+          } catch {
+            setEntries([])
+          }
+        }
       }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -46,22 +77,43 @@ export function WeightProgress() {
     reader.readAsDataURL(file)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!weight) return
-    const today = new Date().toISOString().split('T')[0]
-    const filtered = entries.filter(e => e.date !== today)
-    const updated = [
-      {
-        date: today,
-        weight: parseFloat(weight),
-        photo: photoPreview || '',
-        photoName: photoFile?.name || '',
-      },
-      ...filtered,
-    ]
-    setEntries(updated)
-    localStorage.setItem(storageKey, JSON.stringify(updated))
-    setIsEditing(false)
+    try {
+      if (user?.id) {
+        const { error } = await supabase
+          .from('weight_logs')
+          .upsert(
+            {
+              user_id: user.id,
+              date: selectedDate,
+              weight: parseFloat(weight),
+              photo_url: photoPreview || '',
+            },
+            { onConflict: 'user_id,date' }
+          )
+        if (!error) {
+          await loadEntries()
+          setIsEditing(false)
+        }
+      } else {
+        const filtered = entries.filter(e => e.date !== selectedDate)
+        const updated = [
+          {
+            date: selectedDate,
+            weight: parseFloat(weight),
+            photo: photoPreview || '',
+            photoName: photoFile?.name || '',
+          },
+          ...filtered,
+        ]
+        setEntries(updated)
+        localStorage.setItem(storageKey, JSON.stringify(updated))
+        setIsEditing(false)
+      }
+    } catch (err) {
+      console.error('Error saving weight:', err)
+    }
   }
 
   const handleCancel = () => {
@@ -75,9 +127,13 @@ export function WeightProgress() {
   const minWeight = weights.length ? Math.min(...weights) - 2 : 80
   const maxWeight = weights.length ? Math.max(...weights) + 2 : 90
 
-  const currentWeight = weights.length ? weights[weights.length - 1] : null
-  const previousWeight = weights.length > 1 ? weights[weights.length - 2] : null
-  const delta = currentWeight && previousWeight ? (currentWeight - previousWeight).toFixed(1) : null
+  // Show weight only for selected date
+  const currentWeight = useMemo(() => 
+    entries.find(e => e.date === selectedDate && e.weight)?.weight || null,
+    [entries, selectedDate]
+  )
+  const previousWeight = weights.length > 1 ? weights[1] : null
+  const delta = null // delta display removed per request
 
   const getChartPoints = () => {
     if (!weights.length) return []
@@ -164,7 +220,7 @@ export function WeightProgress() {
     <div className="weight-card">
       <div className="weight-header">
         <div>
-          <p className="section-title">Weight</p>
+          <p className="section-title">Today's Weight</p>
           <div className="weight-display">
             <button 
               className="weight-value clickable" 
@@ -174,16 +230,16 @@ export function WeightProgress() {
             >
               {currentWeight ? `${currentWeight.toFixed(1)} kg` : '—'}
             </button>
-            {delta && (
-              <p className={`weight-delta ${Number(delta) > 0 ? 'delta-up' : 'delta-down'}`}>
-                {Number(delta) > 0 ? '+' : ''}{delta} kg
-              </p>
-            )}
           </div>
         </div>
-        <button className="text-link" type="button" onClick={() => navigate('/weight')}>
-          View details
-        </button>
+        <div className="weight-actions">
+          <button className="text-link" type="button" onClick={() => navigate('/weight')}>
+            See more
+          </button>
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => setIsEditing(true)}>
+            Add weight
+          </button>
+        </div>
       </div>
     </div>
   )

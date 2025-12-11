@@ -1,30 +1,51 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Home, Dumbbell, ListTodo, User, ChevronDown } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
+import { useSelectedDate } from '../contexts/DateContext'
 
 function WeightOverviewPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { selectedDate } = useSelectedDate()
   const storageKey = user?.id ? `progress-${user.id}` : 'progress-guest'
 
   const [entries, setEntries] = useState([])
   const [expandedWeek, setExpandedWeek] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadEntries()
-  }, [storageKey])
+  }, [user?.id])
 
-  const loadEntries = () => {
-    const stored = localStorage.getItem(storageKey)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        setEntries(parsed)
-      } catch {
-        setEntries([])
+  const loadEntries = async () => {
+    try {
+      setLoading(true)
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('weight_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+
+        if (!error && data) {
+          setEntries(data)
+        }
+      } else {
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            setEntries(parsed)
+          } catch {
+            setEntries([])
+          }
+        }
       }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -78,6 +99,37 @@ function WeightOverviewPage() {
 
   const weeks = getGroupedByWeek()
 
+  const stats = useMemo(() => {
+    const weights = entries.filter(e => e.weight).map(e => e.weight)
+    
+    // Current shows only selected date entry
+    const currentEntry = entries.find(e => e.date === selectedDate && e.weight)
+    
+    // Always show min/max/trend if we have data
+    if (!weights.length) {
+      return { current: null, min: null, max: null, trend: '→' }
+    }
+    
+    // Calculate trend: compare first 3 entries avg vs last 3 entries avg
+    let trend = '→'
+    if (weights.length >= 2) {
+      const recent = weights.slice(0, Math.min(3, weights.length))
+      const older = weights.slice(Math.max(0, weights.length - 3))
+      const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length
+      const olderAvg = older.reduce((a, b) => a + b, 0) / older.length
+      
+      if (recentAvg < olderAvg - 0.5) trend = '↓'
+      else if (recentAvg > olderAvg + 0.5) trend = '↑'
+    }
+
+    return {
+      current: currentEntry?.weight || null,
+      min: Math.min(...weights),
+      max: Math.max(...weights),
+      trend,
+    }
+  }, [entries, selectedDate])
+
   return (
     <div className="weight-overview-page">
       <main className="weight-overview-main">
@@ -89,25 +141,29 @@ function WeightOverviewPage() {
         </section>
 
         <section className="overview-stats">
-          {entries.length > 0 && (
-            <>
-              <div className="stat-box">
-                <p className="stat-label">Current</p>
-                <p className="stat-value">{entries[entries.length - 1].weight?.toFixed(1) || '—'} kg</p>
-              </div>
-              <div className="stat-box">
-                <p className="stat-label">Lowest</p>
-                <p className="stat-value">
-                  {Math.min(...entries.filter(e => e.weight).map(e => e.weight)).toFixed(1)} kg
-                </p>
-              </div>
-              <div className="stat-box">
-                <p className="stat-label">Highest</p>
-                <p className="stat-value">
-                  {Math.max(...entries.filter(e => e.weight).map(e => e.weight)).toFixed(1)} kg
-                </p>
-              </div>
-            </>
+          {stats.current !== null && (
+            <div className="stat-box">
+              <p className="stat-label">Current</p>
+              <p className="stat-value">{stats.current?.toFixed(1)} kg</p>
+            </div>
+          )}
+          {stats.min !== null && (
+            <div className="stat-box">
+              <p className="stat-label">Lowest</p>
+              <p className="stat-value">{stats.min?.toFixed(1)} kg</p>
+            </div>
+          )}
+          {stats.max !== null && (
+            <div className="stat-box">
+              <p className="stat-label">Highest</p>
+              <p className="stat-value">{stats.max?.toFixed(1)} kg</p>
+            </div>
+          )}
+          {stats.min !== null && (
+            <div className="stat-box">
+              <p className="stat-label">Trend</p>
+              <p className="stat-value trend-indicator">{stats.trend}</p>
+            </div>
           )}
         </section>
 
