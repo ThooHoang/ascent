@@ -68,7 +68,6 @@ export function SmartHabits() {
         const parsed = JSON.parse(stored)
         setHabits([...DEFAULT_HABITS, ...parsed])
       } catch (err) {
-        console.error('Error parsing habits storage:', err)
         setHabits(DEFAULT_HABITS)
       }
     } else {
@@ -86,7 +85,6 @@ export function SmartHabits() {
       const { data } = await supabase
         .from('habit_completions')
         .select('habit_id, completed')
-        .eq('user_id', user.id)
         .eq('date', dateStr)
 
       if (data) {
@@ -97,7 +95,7 @@ export function SmartHabits() {
         setCompletions(completed)
       }
     } catch (err) {
-      console.error('Error fetching completions:', err)
+      // ignore error
     } finally {
       setLoading(false)
     }
@@ -108,7 +106,6 @@ export function SmartHabits() {
       const { data } = await supabase
         .from('habit_streaks')
         .select('habit_id, current_streak, best_streak, last_completed_date')
-        .eq('user_id', user.id)
 
       if (data) {
         const streakMap = {}
@@ -118,7 +115,7 @@ export function SmartHabits() {
         setStreaks(streakMap)
       }
     } catch (err) {
-      console.error('Error fetching streaks:', err)
+      // ignore error
     }
   }
 
@@ -149,7 +146,6 @@ export function SmartHabits() {
         const { error } = await supabase
           .from('habit_completions')
           .update({ completed: false })
-          .eq('user_id', user.id)
           .eq('habit_id', habitId)
           .eq('date', selectedDate)
 
@@ -159,7 +155,7 @@ export function SmartHabits() {
         }
       }
     } catch (err) {
-      console.error('Error toggling habit:', err)
+      // ignore error
     }
   }
 
@@ -170,7 +166,6 @@ export function SmartHabits() {
       let { data: streakData } = await supabase
         .from('habit_streaks')
         .select('*')
-        .eq('user_id', user.id)
         .eq('habit_id', habitId)
         .single()
 
@@ -201,7 +196,7 @@ export function SmartHabits() {
             best_streak: newBestStreak,
             last_completed_date: targetDate.toISOString(),
           },
-          { onConflict: 'user_id,habit_id' }
+          { onConflict: 'habit_id' }
         )
 
       if (!error) {
@@ -216,7 +211,7 @@ export function SmartHabits() {
         }))
       }
     } catch (err) {
-      console.error('Error updating streak:', err)
+      // ignore error
     }
   }
 
@@ -230,7 +225,7 @@ export function SmartHabits() {
         .single()
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching streak for undo:', error)
+        // ignore error
         return
       }
 
@@ -260,7 +255,7 @@ export function SmartHabits() {
         }))
       }
     } catch (err) {
-      console.error('Error reducing streak:', err)
+      // ignore error
     }
   }
 

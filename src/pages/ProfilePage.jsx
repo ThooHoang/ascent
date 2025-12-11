@@ -1,10 +1,9 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
-import { Home, Dumbbell, ListTodo, User as UserIcon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { useState } from 'react'
+import { BottomNav } from '../components/ui/BottomNav'
 
 function ProfilePage() {
   const navigate = useNavigate()
@@ -35,7 +34,6 @@ function ProfilePage() {
       setIsEditing(false)
       setErrorMsg('')
     } else {
-      console.error('Save error:', error)
       setErrorMsg(error?.message || 'Failed to save name. Please try again.')
     }
     setSaving(false)
@@ -155,40 +153,7 @@ function ProfilePage() {
         </section>
       </main>
 
-      <nav className="bottom-nav" aria-label="Primary navigation">
-        <button
-          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
-          onClick={() => navigate('/dashboard')}
-          type="button"
-          aria-label="Dashboard"
-        >
-          <Home size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/workouts' ? 'active' : ''}`}
-          onClick={() => navigate('/workouts')}
-          type="button"
-          aria-label="Workouts"
-        >
-          <Dumbbell size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/habits' ? 'active' : ''}`}
-          onClick={() => navigate('/habits')}
-          type="button"
-          aria-label="Habits"
-        >
-          <ListTodo size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
-          onClick={() => navigate('/profile')}
-          type="button"
-          aria-label="Profile"
-        >
-          <UserIcon size={22} />
-        </button>
-      </nav>
+      <BottomNav />
     </div>
   )
 }

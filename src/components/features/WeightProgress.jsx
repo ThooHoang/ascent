@@ -29,7 +29,6 @@ export function WeightProgress() {
         const { data, error } = await supabase
           .from('weight_logs')
           .select('*')
-          .eq('user_id', user.id)
           .order('date', { ascending: false })
 
         if (!error && data) {
@@ -112,7 +111,7 @@ export function WeightProgress() {
         setIsEditing(false)
       }
     } catch (err) {
-      console.error('Error saving weight:', err)
+      // ignore error
     }
   }
 
@@ -233,10 +232,10 @@ export function WeightProgress() {
           </div>
         </div>
         <div className="weight-actions">
-          <button className="text-link" type="button" onClick={() => navigate('/weight')}>
-            See more
+          <button className="btn-link-secondary" type="button" onClick={() => navigate('/weight')}>
+            View history →
           </button>
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => setIsEditing(true)}>
+          <button className="btn btn-sm" type="button" onClick={() => setIsEditing(true)}>
             Add weight
           </button>
         </div>

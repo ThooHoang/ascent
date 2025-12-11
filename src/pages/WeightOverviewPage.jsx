@@ -27,7 +27,6 @@ function WeightOverviewPage() {
         const { data, error } = await supabase
           .from('weight_logs')
           .select('*')
-          .eq('user_id', user.id)
           .order('date', { ascending: false })
 
         if (!error && data) {

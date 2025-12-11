@@ -34,16 +34,15 @@ export function useAuth() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', userId)
         .single()
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error)
+        // ignore error
       } else {
         setProfile(data)
       }
     } catch (err) {
-      console.error('Profile fetch exception:', err)
+      // ignore error
     } finally {
       setLoading(false)
     }
@@ -72,7 +71,7 @@ export function useAuth() {
         ])
 
       if (profileError) {
-        console.error('Error creating profile:', profileError)
+        // ignore error
       }
     }
 
@@ -107,11 +106,10 @@ export function useAuth() {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id)
         .select()
 
       if (error) {
-        console.error('Supabase update error:', error)
+        // ignore error
         return { data: null, error }
       }
 
@@ -131,7 +129,6 @@ export function useAuth() {
       const { data: freshData, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
         .single()
 
       if (!fetchError && freshData) {
@@ -141,7 +138,7 @@ export function useAuth() {
 
       return { data: null, error: fetchError || new Error('No data returned') }
     } catch (err) {
-      console.error('Error updating profile:', err)
+      // ignore error
       return { data: null, error: err }
     }
   }

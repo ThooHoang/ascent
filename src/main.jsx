@@ -7,7 +7,7 @@ import { DateProvider } from './contexts/DateContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter basename="/ascent">
+    <BrowserRouter basename="/">
       <DateProvider>
         <App />
       </DateProvider>

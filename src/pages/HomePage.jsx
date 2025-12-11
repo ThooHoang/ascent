@@ -1,6 +1,6 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Home, Dumbbell, ListTodo, User, Bell, Calendar, X } from 'lucide-react'
+import { Bell, Calendar, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
@@ -8,11 +8,12 @@ import { TodayTraining } from '../components/features/TodayTraining'
 import { WeightProgress } from '../components/features/WeightProgress'
 import { MiniCalendar } from '../components/features/MiniCalendar'
 import { MiniHabitsWidget } from '../components/features/MiniHabitsWidget'
+import { BottomNav } from '../components/ui/BottomNav'
+import { StatCard } from '../components/ui/StatCard'
 import { useSelectedDate } from '../contexts/DateContext'
 
 function HomePage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { user, profile } = useAuth()
   const [showCalendar, setShowCalendar] = useState(false)
   const [stats, setStats] = useState({
@@ -45,7 +46,6 @@ function HomePage() {
         const { data, error } = await supabase
           .from('habit_completions')
           .select('habit_id, completed')
-          .eq('user_id', user.id)
           .eq('date', targetDate)
           .eq('completed', true)
 
@@ -76,7 +76,6 @@ function HomePage() {
         const { data, error } = await supabase
           .from('sleep_logs')
           .select('hours')
-          .eq('user_id', user.id)
           .eq('date', targetDate)
           .single()
 
@@ -94,7 +93,6 @@ function HomePage() {
         const { data, error } = await supabase
           .from('habit_streaks')
           .select('best_streak')
-          .eq('user_id', user.id)
 
         if (!error && data?.length) {
           bestStreak = Math.max(...data.map(s => s.best_streak || 0), 0)
@@ -199,18 +197,9 @@ function HomePage() {
         </section>
 
         <section className="quick-stats">
-          <div className="stat-pill">
-            <p className="stat-value">{stats.habitsLeft}</p>
-            <p className="stat-label">Habits left</p>
-          </div>
-          <div className="stat-pill">
-            <p className="stat-value">{stats.sleepHours || '—'}</p>
-            <p className="stat-label">Sleep (h)</p>
-          </div>
-          <div className="stat-pill">
-            <p className="stat-value">🔥 {stats.bestStreak}</p>
-            <p className="stat-label">Best streak</p>
-          </div>
+          <StatCard value={stats.habitsLeft} label="Habits left" />
+          <StatCard value={stats.sleepHours || '—'} label="Sleep (h)" />
+          <StatCard value={`🔥 ${stats.bestStreak}`} label="Best streak" />
         </section>
 
         <section className="dashboard-widgets">
@@ -239,40 +228,7 @@ function HomePage() {
         </section>
       </main>
 
-      <nav className="bottom-nav" aria-label="Primary navigation">
-        <button
-          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
-          onClick={() => navigate('/dashboard')}
-          type="button"
-          aria-label="Dashboard"
-        >
-          <Home size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/workouts' ? 'active' : ''}`}
-          onClick={() => navigate('/workouts')}
-          type="button"
-          aria-label="Workouts"
-        >
-          <Dumbbell size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/habits' ? 'active' : ''}`}
-          onClick={() => navigate('/habits')}
-          type="button"
-          aria-label="Habits"
-        >
-          <ListTodo size={22} />
-        </button>
-        <button
-          className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
-          onClick={() => navigate('/profile')}
-          type="button"
-          aria-label="Profile"
-        >
-          <User size={22} />
-        </button>
-      </nav>
+      <BottomNav />
 
       {/* Calendar Modal */}
       {showCalendar && (

@@ -60,10 +60,9 @@ export function MiniHabitsWidget({ selectedDate: selectedDateProp }) {
       }
 
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('habit_completions')
           .select('habit_id, completed')
-          .eq('user_id', user.id)
           .eq('date', selectedDate)
 
         if (!error && data) {
