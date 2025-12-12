@@ -926,103 +926,7 @@ body {
 }
 
 /* Sleep Log Card Styles */
-.sleep-log-card {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #22C55E 100%);
-  border: none;
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 140px;
-  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.sleep-log-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0);
-  transition: background 0.3s ease;
-}
-
-.sleep-log-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.4);
-}
-
-.sleep-log-card:hover::before {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.sleep-log-card:active {
-  transform: translateY(-2px);
-}
-
-.sleep-card-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.sleep-card-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.sleep-icon {
-  font-size: 2rem;
-}
-
-.sleep-title {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: white;
-}
-
-.sleep-card-subtitle {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-}
-
-.sleep-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--space-2);
-}
-
-.sleep-cta {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  transition: transform 0.2s ease;
-}
-
-.sleep-log-card:hover .sleep-cta {
-  transform: translateX(4px);
-}
-
-.sleep-value {
-  font-size: var(--font-size-2xl);
-  font-weight: 800;
-  color: white;
-  background: rgba(255, 255, 255, 0.2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-md);
-}
+/* Sleep Log Card - REMOVED (now using standard sleep-card) */
 
 .dashboard-cards {
   display: grid;
@@ -1476,17 +1380,48 @@ body {
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .sleep-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-3);
   align-items: flex-start;
 }
 
-.sleep-status {
-  font-size: var(--font-size-lg);
+.sleep-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.sleep-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.sleep-hours {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.sleep-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+}
+
+.sleep-actions .btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
 }
 
 .sleep-controls {
@@ -1514,7 +1449,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--space-4);
-  background: var(--color-bg-soft);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--border-color);
   padding: var(--space-3);
   border-radius: var(--radius-md);
 }
@@ -1554,19 +1490,26 @@ body {
 .quality-btn {
   flex: 1;
   padding: var(--space-2);
-  background: var(--color-bg-soft);
+  background: var(--color-bg-primary);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 44px;
+  color: var(--color-text-secondary);
+}
+
+.quality-btn:hover {
+  border-color: var(--color-primary);
 }
 
 .quality-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
+  box-shadow: var(--shadow-md);
 }
 
 .sleep-save-btn {
@@ -2280,19 +2223,23 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-3);
-  background: var(--color-bg-soft);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .history-item.active {
   background: rgba(22, 163, 74, 0.08);
-  border: 1px solid var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .history-item:hover {
-  transform: scale(1.01);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .history-date {
@@ -2320,7 +2267,7 @@ body {
 /* Sleep Page */
 .sleep-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-bg-soft) 0%, #F0FDF4 100%);
+  background: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
 }

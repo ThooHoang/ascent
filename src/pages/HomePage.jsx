@@ -167,6 +167,17 @@ function HomePage() {
     return quotes[idx]
   }
 
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) {
+      return 'Good morning,'
+    } else if (hour < 18) {
+      return 'Good afternoon,'
+    } else {
+      return 'Good evening,'
+    }
+  }
+
   return (
     <div className="dashboard-page">
       <main className="dashboard-main-compact">
@@ -176,7 +187,7 @@ function HomePage() {
               {(userName || 'U')[0].toUpperCase()}
             </div>
             <div>
-              <p className="greeting-text">Good morning,</p>
+              <p className="greeting-text">{getTimeBasedGreeting()}</p>
               <h1 className="greeting-name">{userName}</h1>
               <p className="greeting-date">{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
             </div>
@@ -212,19 +223,24 @@ function HomePage() {
         </section>
 
         <section className="quick-action-buttons">
-          <button className="sleep-log-card" type="button" onClick={() => navigate('/sleep')}>
-            <div className="sleep-card-content">
-              <div className="sleep-card-header">
-                <span className="sleep-icon">😴</span>
-                <span className="sleep-title">Sleep Log</span>
+          <div className="sleep-card">
+            <div className="sleep-header">
+              <div>
+                <p className="section-title">Sleep</p>
+                <div className="sleep-display">
+                  <p className="sleep-hours">{stats.sleepHours || '—'}h</p>
+                </div>
               </div>
-              <p className="sleep-card-subtitle">Track your rest & improve your health</p>
-              <div className="sleep-card-footer">
-                <span className="sleep-cta">Log now →</span>
-                <span className="sleep-value">{stats.sleepHours}h</span>
+              <div className="sleep-actions">
+                <button className="btn-link-secondary" type="button" onClick={() => navigate('/sleep')}>
+                  View history →
+                </button>
+                <button className="btn btn-sm" type="button" onClick={() => navigate('/sleep')}>
+                  Log now
+                </button>
               </div>
             </div>
-          </button>
+          </div>
         </section>
       </main>
 

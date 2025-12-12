@@ -8,7 +8,6 @@ import { useSelectedDate } from '../contexts/DateContext'
 
 function SleepPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { user } = useAuth()
   const { selectedDate, setSelectedDate } = useSelectedDate()
   const [date, setDate] = useState(selectedDate)
