@@ -34,15 +34,15 @@ export function useAuth() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .single()
+        .eq('user_id', userId)
 
-      if (error && error.code !== 'PGRST116') {
-        // ignore error
-      } else {
-        setProfile(data)
+      if (error) {
+        console.error('fetchProfile error:', error)
+      } else if (data && data.length > 0) {
+        setProfile(data[0])
       }
     } catch (err) {
-      // ignore error
+      console.error('fetchProfile exception:', err)
     } finally {
       setLoading(false)
     }
@@ -71,11 +71,12 @@ export function useAuth() {
         ])
 
       if (profileError) {
-        // ignore error
+        console.error('Profile creation error:', profileError)
+        return { data: null, error: profileError }
       }
     }
 
-    return { data, error }
+    return { data, error: null }
   }
 
   const signIn = async (email, password) => {
@@ -103,42 +104,64 @@ export function useAuth() {
     if (!user?.id) return { error: 'No user' }
     
     try {
-      const { data, error } = await supabase
+      // First, check if profile exists
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+
+      if (!existing || existing.length === 0) {
+        // Profile doesn't exist, create it with updates and user email
+        const { error: insertError, data: insertData } = await supabase
+          .from('profiles')
+          .insert([{ 
+            user_id: user.id, 
+            email: user.email,
+            ...updates 
+          }])
+          .select()
+
+        if (insertError) {
+          console.error('Profile insert error:', insertError)
+          return { data: null, error: insertError }
+        }
+
+        if (insertData && insertData.length > 0) {
+          setProfile(insertData[0])
+          return { data: insertData[0], error: null }
+        }
+      }
+
+      // Profile exists, update it
+      const { error: updateError } = await supabase
         .from('profiles')
         .update(updates)
-        .select()
+        .eq('user_id', user.id)
 
-      if (error) {
-        // ignore error
-        return { data: null, error }
+      if (updateError) {
+        console.error('updateProfile error:', updateError)
+        return { data: null, error: updateError }
       }
 
-      if (data && data.length > 0) {
-        const updatedProfile = data[0]
-        setProfile(updatedProfile)
-        // Force a re-render by triggering storage event
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: `profile-${user.id}`,
-          newValue: JSON.stringify(updatedProfile),
-          url: window.location.href,
-        }))
-        return { data: updatedProfile, error: null }
-      }
-
-      // If no error but also no data, fetch the profile again
+      // Fetch the updated profile
       const { data: freshData, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .single()
+        .eq('user_id', user.id)
 
-      if (!fetchError && freshData) {
-        setProfile(freshData)
-        return { data: freshData, error: null }
+      if (!fetchError && freshData && freshData.length > 0) {
+        setProfile(freshData[0])
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: `profile-${user.id}`,
+          newValue: JSON.stringify(freshData[0]),
+          url: window.location.href,
+        }))
+        return { data: freshData[0], error: null }
       }
 
       return { data: null, error: fetchError || new Error('No data returned') }
     } catch (err) {
-      // ignore error
+      console.error('updateProfile exception:', err)
       return { data: null, error: err }
     }
   }

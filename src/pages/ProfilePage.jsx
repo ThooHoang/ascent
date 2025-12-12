@@ -7,7 +7,6 @@ import { BottomNav } from '../components/ui/BottomNav'
 
 function ProfilePage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { user, profile, signOut, updateProfile } = useAuth()
   
   const [isEditing, setIsEditing] = useState(false)
