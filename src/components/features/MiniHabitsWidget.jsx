@@ -65,7 +65,7 @@ export function MiniHabitsWidget({ selectedDate: selectedDateProp }) {
           .select('habit_id, completed')
           .eq('date', selectedDate)
 
-        if (!error && data) {
+        if (data) {
           const completed = {}
           data.forEach(item => {
             completed[item.habit_id] = item.completed
@@ -101,24 +101,26 @@ export function MiniHabitsWidget({ selectedDate: selectedDateProp }) {
     }
 
     try {
+      // Update state immediately (optimistic update)
+      setCompletions(prev => ({ ...prev, [habitId]: newState }))
+
       const { error } = await supabase
         .from('habit_completions')
-        .upsert(
-          {
-            user_id: user.id,
-            habit_id: habitId,
-            date: selectedDate,
-            completed: newState,
-            completed_at: newState ? new Date().toISOString() : null,
-          },
-          { onConflict: 'user_id,habit_id,date' }
-        )
+        .upsert({
+          user_id: user.id,
+          habit_id: habitId,
+          date: selectedDate,
+          completed: newState,
+          completed_at: newState ? new Date().toISOString() : null,
+        }, { onConflict: 'user_id,habit_id,date' })
 
-      if (!error) {
-        setCompletions(prev => ({ ...prev, [habitId]: newState }))
+      if (error) {
+        // Revert state on error
+        setCompletions(prev => ({ ...prev, [habitId]: !newState }))
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      // Revert state on error
+      setCompletions(prev => ({ ...prev, [habitId]: !newState }))
     }
   }
 
