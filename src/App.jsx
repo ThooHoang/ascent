@@ -20,8 +20,7 @@ function App() {
     return (
       <div className="loading-screen">
         <div role="status" aria-label="Loading application">
-          <div className="loading-icon">🌱</div>
-          <div className="loading-text">Loading Ascent...</div>
+          <div className="loading-icon">Ascent</div>
         </div>
       </div>
     )
@@ -32,8 +31,7 @@ function App() {
       <Suspense fallback={
         <div className="loading-screen">
           <div role="status" aria-label="Loading page">
-            <div className="loading-icon">🌱</div>
-            <div className="loading-text">Loading...</div>
+            <div className="loading-icon">Ascent</div>
           </div>
         </div>
       }>
