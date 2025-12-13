@@ -3424,6 +3424,11 @@ p { margin: 0; color: var(--color-text-secondary); }
   font-family: var(--font-primary);
 }
 
+.schedule-item.today {
+  border: 2px solid var(--color-primary);
+  background: rgba(22, 163, 74, 0.05);
+}
+
 .schedule-item:hover:not(:disabled) {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);

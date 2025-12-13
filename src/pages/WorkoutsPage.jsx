@@ -6,6 +6,7 @@ function WorkoutsPage() {
   const navigate = useNavigate()
   const [todayTraining, setTodayTraining] = useState(null)
   const [trainingType, setTrainingType] = useState(null)
+  const [todayIndex, setTodayIndex] = useState(null)
 
   useEffect(() => {
     const today = new Date().getDay()
@@ -22,6 +23,9 @@ function WorkoutsPage() {
     const training = trainingMap[today]
     setTodayTraining(training)
     setTrainingType(training?.type)
+    // Map day to schedule index (Monday = 0, Sunday = 6)
+    const scheduleIndex = today === 0 ? 6 : today - 1
+    setTodayIndex(scheduleIndex)
   }, [])
 
   const trainingSchedule = [
@@ -97,7 +101,7 @@ function WorkoutsPage() {
               return (
                 <button
                   key={idx}
-                  className={`schedule-item ${trainingType ? 'clickable' : ''}`}
+                  className={`schedule-item ${trainingType ? 'clickable' : ''} ${idx === todayIndex ? 'today' : ''}`}
                   onClick={() => trainingType && navigate(`/workout/${trainingType}`)}
                   type="button"
                   disabled={!trainingType}

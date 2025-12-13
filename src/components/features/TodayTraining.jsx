@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../ui/Button'
 
 export function TodayTraining() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [todayTraining, setTodayTraining] = useState(null)
   const [workoutLogged, setWorkoutLogged] = useState(false)
@@ -12,13 +14,13 @@ export function TodayTraining() {
   useEffect(() => {
     const today = new Date().getDay()
     const trainingMap = {
-      0: { name: 'Rest Day', emoji: '😴' },
-      1: { name: 'Rest Day', emoji: '😴' },
-      2: { name: 'Lower Body', emoji: '🦵' },
-      3: { name: 'Rest Day', emoji: '😴' },
-      4: { name: 'Arms & Shoulders', emoji: '🎯' },
-      5: { name: 'Upper Body', emoji: '💪' },
-      6: { name: 'Lower Body', emoji: '🦵' },
+      0: { name: 'Rest Day', emoji: '😴', type: null },
+      1: { name: 'Rest Day', emoji: '😴', type: null },
+      2: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
+      3: { name: 'Rest Day', emoji: '😴', type: null },
+      4: { name: 'Arms & Shoulders', emoji: '🎯', type: 'arms-shoulders' },
+      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' },
+      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
     }
     setTodayTraining(trainingMap[today])
     checkIfLogged()
@@ -40,7 +42,13 @@ export function TodayTraining() {
     }
   }
 
-  const logWorkout = async () => {
+  const startWorkout = () => {
+    if (todayTraining?.type) {
+      navigate(`/workout/${todayTraining.type}`)
+    }
+  }
+
+  const logWorkoutQuick = async () => {
     if (!user?.id || !todayTraining) return
     try {
       setLogging(true)
@@ -87,11 +95,10 @@ export function TodayTraining() {
                 <Button 
                   size="small" 
                   variant="primary"
-                  onClick={logWorkout}
-                  disabled={logging}
+                  onClick={startWorkout}
                   className="w-full"
                 >
-                  {logging ? 'Starting...' : 'Start workout'}
+                  Start workout
                 </Button>
               )}
             </div>
