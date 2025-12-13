@@ -2,29 +2,31 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { useSelectedDate } from '../../contexts/DateContext'
 import { Button } from '../ui/Button'
 
 export function TodayTraining() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedDate } = useSelectedDate()
   const [todayTraining, setTodayTraining] = useState(null)
   const [workoutLogged, setWorkoutLogged] = useState(false)
   const [logging, setLogging] = useState(false)
 
   useEffect(() => {
-    const today = new Date().getDay()
+    const today = new Date(selectedDate).getDay()
     const trainingMap = {
-      0: { name: 'Rest Day', emoji: '😴', type: null },
-      1: { name: 'Rest Day', emoji: '😴', type: null },
-      2: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
-      3: { name: 'Rest Day', emoji: '😴', type: null },
-      4: { name: 'Arms & Shoulders', emoji: '🎯', type: 'arms-shoulders' },
-      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' },
-      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
+      0: { name: 'Rest Day', emoji: '😴', type: null },     // Sunday
+      1: { name: 'Rest Day', emoji: '😴', type: null },     // Monday
+      2: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Tuesday
+      3: { name: 'Rest Day', emoji: '😴', type: null },     // Wednesday
+      4: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Thursday
+      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Friday
+      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Saturday
     }
     setTodayTraining(trainingMap[today])
     checkIfLogged()
-  }, [user?.id])
+  }, [user?.id, selectedDate])
 
   const checkIfLogged = async () => {
     if (!user?.id) return
@@ -88,9 +90,14 @@ export function TodayTraining() {
           {todayTraining.name !== 'Rest Day' ? (
             <div className="training-action">
               {workoutLogged ? (
-                <div className="workout-completed">
-                  <p className="text-success">✓ Logged for today</p>
-                </div>
+                <Button 
+                  size="small" 
+                  variant="secondary"
+                  onClick={startWorkout}
+                  className="w-full"
+                >
+                  View workout
+                </Button>
               ) : (
                 <Button 
                   size="small" 

@@ -8,9 +8,12 @@ function HabitsPage() {
   return (
     <div className="dashboard-page">
       <main className="dashboard-main">
-        <p className="greeting-date" style={{ marginBottom: '12px' }}>
-          {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </p>
+        <section className="habits-header">
+          <div>
+            <p className="section-eyebrow">Habits</p>
+            <h1 className="hero-title">Daily Habits</h1>
+          </div>
+        </section>
         <SmartHabits />
       </main>
 

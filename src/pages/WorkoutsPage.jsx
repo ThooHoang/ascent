@@ -1,24 +1,26 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { BottomNav } from '../components/ui/BottomNav'
+import { useSelectedDate } from '../contexts/DateContext'
 
 function WorkoutsPage() {
   const navigate = useNavigate()
   const [todayTraining, setTodayTraining] = useState(null)
   const [trainingType, setTrainingType] = useState(null)
   const [todayIndex, setTodayIndex] = useState(null)
+  const { selectedDate } = useSelectedDate()
 
   useEffect(() => {
-    const today = new Date().getDay()
+    const today = new Date(selectedDate).getDay()
     // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const trainingMap = {
-      0: { name: 'Rest Day', emoji: '😴', type: null },
-      1: { name: 'Rest Day', emoji: '😴', type: null },
-      2: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
-      3: { name: 'Rest Day', emoji: '😴', type: null },
-      4: { name: 'Arms & Shoulders', emoji: '🎯', type: 'arms-shoulders' },
-      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' },
-      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' },
+      0: { name: 'Rest Day', emoji: '😴', type: null },         // Sunday
+      1: { name: 'Rest Day', emoji: '😴', type: null },         // Monday
+      2: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Tuesday
+      3: { name: 'Rest Day', emoji: '😴', type: null },         // Wednesday
+      4: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Thursday
+      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Friday
+      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Saturday
     }
     const training = trainingMap[today]
     setTodayTraining(training)
@@ -26,13 +28,13 @@ function WorkoutsPage() {
     // Map day to schedule index (Monday = 0, Sunday = 6)
     const scheduleIndex = today === 0 ? 6 : today - 1
     setTodayIndex(scheduleIndex)
-  }, [])
+  }, [selectedDate])
 
   const trainingSchedule = [
     { day: 'Monday', focus: 'Rest Day', emoji: '😴' },
-    { day: 'Tuesday', focus: 'Lower Body', emoji: '🦵' },
+    { day: 'Tuesday', focus: 'Upper Body', emoji: '💪' },
     { day: 'Wednesday', focus: 'Rest Day', emoji: '😴' },
-    { day: 'Thursday', focus: 'Arms & Shoulders', emoji: '🎯' },
+    { day: 'Thursday', focus: 'Lower Body', emoji: '🦵' },
     { day: 'Friday', focus: 'Upper Body', emoji: '💪' },
     { day: 'Saturday', focus: 'Lower Body', emoji: '🦵' },
     { day: 'Sunday', focus: 'Rest Day', emoji: '😴' },
@@ -51,12 +53,6 @@ function WorkoutsPage() {
         { name: 'Deadlifts', sets: '4 x 4-6 reps', emoji: '🏋️' },
         { name: 'Leg Press', sets: '3 x 8-10 reps', emoji: '🦵' },
         { name: 'Leg Curls', sets: '3 x 10-12 reps', emoji: '🦵' },
-      ],
-      'Arms & Shoulders': [
-        { name: 'Shoulder Press', sets: '4 x 6-8 reps', emoji: '🎯' },
-        { name: 'Barbell Curls', sets: '3 x 8-10 reps', emoji: '💪' },
-        { name: 'Tricep Dips', sets: '3 x 8-10 reps', emoji: '💪' },
-        { name: 'Lateral Raises', sets: '3 x 12-15 reps', emoji: '🎯' },
       ],
       'Rest Day': [
         { name: 'Light stretching', sets: '15-20 mins', emoji: '🧘' },
@@ -95,8 +91,7 @@ function WorkoutsPage() {
           <div className="training-schedule">
             {trainingSchedule.map((item, idx) => {
               const trainingType = item.focus === 'Upper Body' ? 'upper-body' : 
-                                  item.focus === 'Lower Body' ? 'lower-body' :
-                                  item.focus === 'Arms & Shoulders' ? 'arms-shoulders' : null
+                                  item.focus === 'Lower Body' ? 'lower-body' : null
               
               return (
                 <button
