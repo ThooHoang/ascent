@@ -1,14 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import HomePage from './pages/HomePage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import ProfilePage from './pages/ProfilePage.jsx'
-import SplashPage from './pages/SplashPage.jsx'
-import OnboardingPage from './pages/OnboardingPage.jsx'
-import SleepPage from './pages/SleepPage.jsx'
-import HabitsPage from './pages/HabitsPage.jsx'
-import WorkoutsPage from './pages/WorkoutsPage.jsx'
-import WeightOverviewPage from './pages/WeightOverviewPage.jsx'
+import { lazy, Suspense } from 'react'
 import { useAuth } from './hooks/useAuth.js'
+
+// Route-level code-splitting to keep initial bundle small for Lighthouse/real users
+const HomePage = lazy(() => import('./pages/HomePage.jsx'))
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
+const SplashPage = lazy(() => import('./pages/SplashPage.jsx'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage.jsx'))
+const SleepPage = lazy(() => import('./pages/SleepPage.jsx'))
+const HabitsPage = lazy(() => import('./pages/HabitsPage.jsx'))
+const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage.jsx'))
+const WeightOverviewPage = lazy(() => import('./pages/WeightOverviewPage.jsx'))
 
 function App() {
   const { user, loading } = useAuth()
@@ -26,6 +29,14 @@ function App() {
 
   return (
     <div className="app-shell">
+      <Suspense fallback={
+        <div className="loading-screen">
+          <div role="status" aria-label="Loading page">
+            <div className="loading-icon">🌱</div>
+            <div className="loading-text">Loading...</div>
+          </div>
+        </div>
+      }>
       <Routes>
         {/* Entry Flow */}
         <Route 
@@ -73,6 +84,7 @@ function App() {
           element={<Navigate to={user ? "/dashboard" : "/"} replace />} 
         />
       </Routes>
+      </Suspense>
     </div>
   )
 }
