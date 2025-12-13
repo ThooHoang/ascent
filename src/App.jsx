@@ -11,6 +11,7 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage.jsx'))
 const SleepPage = lazy(() => import('./pages/SleepPage.jsx'))
 const HabitsPage = lazy(() => import('./pages/HabitsPage.jsx'))
 const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage.jsx'))
+const WorkoutDetailsPage = lazy(() => import('./pages/WorkoutDetailsPage.jsx'))
 const WeightOverviewPage = lazy(() => import('./pages/WeightOverviewPage.jsx'))
 
 function App() {
@@ -66,6 +67,10 @@ function App() {
         <Route 
           path="/workouts" 
           element={user ? <WorkoutsPage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/workout/:trainingType" 
+          element={user ? <WorkoutDetailsPage /> : <Navigate to="/" replace />} 
         />
         <Route 
           path="/profile" 
