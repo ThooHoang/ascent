@@ -16,6 +16,7 @@ function HomePage() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const [showCalendar, setShowCalendar] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [stats, setStats] = useState({
     habitsLeft: 0,
     sleepHours: 0,
@@ -24,6 +25,19 @@ function HomePage() {
   const { selectedDate, setSelectedDate } = useSelectedDate()
 
   const userName = profile?.name || user?.email?.split('@')[0] || 'there'
+
+  // Load avatar from profile or localStorage
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url)
+    } else {
+      const storageKey = user?.id ? `avatar-${user.id}` : 'avatar-guest'
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        setAvatarUrl(stored)
+      }
+    }
+  }, [profile?.avatar_url, user?.id])
 
   const loadStats = async (dateStr = null) => {
     const targetDate = dateStr || new Date().toISOString().split('T')[0]
@@ -203,7 +217,11 @@ function HomePage() {
         <section className="dashboard-header">
           <div className="header-greeting">
             <div className="avatar-mini">
-              {(userName || 'U')[0].toUpperCase()}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={profile?.name || 'Avatar'} className="avatar-mini-image" />
+              ) : (
+                (userName || 'U')[0].toUpperCase()
+              )}
             </div>
             <div>
               <p className="greeting-text">{getTimeBasedGreeting()}</p>

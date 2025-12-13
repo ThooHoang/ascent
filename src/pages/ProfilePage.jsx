@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Pencil } from 'lucide-react'
+import { Pencil, Camera } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -15,6 +15,8 @@ function ProfilePage() {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [activityStats, setActivityStats] = useState({
     workouts: 0,
     habitsDone: 0,
@@ -111,7 +113,17 @@ function ProfilePage() {
     if (profile?.name) {
       setName(profile.name)
     }
-  }, [profile?.name])
+    // Load avatar from profile or localStorage
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url)
+    } else {
+      const storageKey = user?.id ? `avatar-${user.id}` : 'avatar-guest'
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        setAvatarUrl(stored)
+      }
+    }
+  }, [profile?.name, profile?.avatar_url, user?.id])
 
   useEffect(() => {
     loadActivityStats()
@@ -150,12 +162,66 @@ function ProfilePage() {
     }
   }
 
+  const handleAvatarUpload = async (file) => {
+    if (!file) return
+    
+    try {
+      setUploading(true)
+      
+      // Convert file to base64 data URL
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      
+      // Store locally in localStorage
+      const storageKey = user?.id ? `avatar-${user.id}` : 'avatar-guest'
+      localStorage.setItem(storageKey, dataUrl)
+      setAvatarUrl(dataUrl)
+      
+      // If user is authenticated, also update profile in Supabase
+      if (user?.id) {
+        await updateProfile({ avatar_url: dataUrl })
+      }
+      
+      setUploading(false)
+    } catch (err) {
+      alert('Error uploading avatar: ' + err.message)
+      setUploading(false)
+    }
+  }
+
   return (
     <div className="profile-page">
       <main className="profile-main">
         <section className="profile-header">
-          <div className="profile-avatar-large">
-            {(profile?.name || user?.email || 'User')[0].toUpperCase()}
+          <div className="profile-avatar-wrapper">
+            <div className="profile-avatar-large">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={profile?.name || 'Avatar'} className="profile-avatar-image" />
+              ) : (
+                (profile?.name || user?.email || 'User')[0].toUpperCase()
+              )}
+            </div>
+            <input
+              type="file"
+              id="avatar-upload"
+              accept="image/*"
+              onChange={(e) => e.target.files?.[0] && handleAvatarUpload(e.target.files[0])}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              className="avatar-camera-btn"
+              onClick={() => document.getElementById('avatar-upload')?.click()}
+              disabled={uploading}
+              aria-label="Change avatar"
+              title="Change profile photo"
+            >
+              <Camera size={16} />
+            </button>
           </div>
           
           {isEditing ? (
