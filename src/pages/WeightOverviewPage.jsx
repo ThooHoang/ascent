@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Dumbbell, ListTodo, User, ChevronDown } from 'lucide-react'
+import { Home, Dumbbell, ListTodo, User, ChevronDown, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { useSelectedDate } from '../contexts/DateContext'
@@ -15,6 +15,7 @@ function WeightOverviewPage() {
   const [entries, setEntries] = useState([])
   const [expandedWeek, setExpandedWeek] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
 
   useEffect(() => {
     loadEntries()
@@ -206,8 +207,14 @@ function WeightOverviewPage() {
                             </p>
                             <p className="entry-weight">{entry.weight.toFixed(1)} kg</p>
                           </div>
-                          {entry.photo && (
-                            <img src={entry.photo} alt="Progress" className="entry-photo" />
+                          {entry.photo_url && (
+                            <img 
+                              src={entry.photo_url} 
+                              alt="Progress" 
+                              className="entry-photo" 
+                              onClick={() => setSelectedPhoto(entry.photo_url)}
+                              style={{ cursor: 'pointer' }}
+                            />
                           )}
                         </div>
                       ))}
@@ -220,6 +227,22 @@ function WeightOverviewPage() {
           )}
         </section>
       </main>
+
+      {selectedPhoto && (
+        <div className="photo-modal-overlay" onClick={() => setSelectedPhoto(null)}>
+          <div className="photo-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="photo-modal-close"
+              onClick={() => setSelectedPhoto(null)}
+              type="button"
+              aria-label="Close"
+            >
+              <X size={28} />
+            </button>
+            <img src={selectedPhoto} alt="Full preview" className="photo-modal-image" />
+          </div>
+        </div>
+      )}
 
       <nav className="bottom-nav" aria-label="Primary navigation">
         <button
