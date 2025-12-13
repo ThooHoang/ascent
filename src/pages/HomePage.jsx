@@ -87,15 +87,34 @@ function HomePage() {
       }
     }
 
+    // Calculate best streak: longest consecutive days with at least 1 completed habit
     let bestStreak = 0
     if (user?.id) {
       try {
-        const { data, error } = await supabase
-          .from('habit_streaks')
-          .select('best_streak')
+        const { data: allCompletions, error } = await supabase
+          .from('habit_completions')
+          .select('date, completed')
+          .eq('completed', true)
+          .order('date', { ascending: true })
 
-        if (!error && data?.length) {
-          bestStreak = Math.max(...data.map(s => s.best_streak || 0), 0)
+        if (!error && allCompletions?.length) {
+          const completedDates = [...new Set(allCompletions.map(c => c.date))].sort()
+          let currentStreak = 1
+          let maxStreak = 1
+
+          for (let i = 1; i < completedDates.length; i++) {
+            const prevDate = new Date(completedDates[i - 1])
+            const currDate = new Date(completedDates[i])
+            const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24))
+
+            if (daysDiff === 1) {
+              currentStreak++
+              maxStreak = Math.max(maxStreak, currentStreak)
+            } else if (daysDiff > 1) {
+              currentStreak = 1
+            }
+          }
+          bestStreak = maxStreak
         }
       } catch {
         bestStreak = 0

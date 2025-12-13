@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Trash2 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import { useSelectedDate } from '../../contexts/DateContext'
@@ -276,6 +277,40 @@ export function SmartHabits() {
     setShowAddHabit(false)
   }
 
+  const deleteHabit = async (habitId) => {
+    const updated = habits.filter(h => h.id !== habitId)
+    setHabits(updated)
+    persistHabits(updated)
+
+    // Clean up from database if user is signed in
+    if (user?.id) {
+      try {
+        // Delete all completions for this habit
+        await supabase
+          .from('habit_completions')
+          .delete()
+          .eq('habit_id', habitId)
+          .eq('user_id', user.id)
+
+        // Delete streak data for this habit
+        await supabase
+          .from('habit_streaks')
+          .delete()
+          .eq('habit_id', habitId)
+          .eq('user_id', user.id)
+      } catch (err) {
+        // ignore error - habit is still removed locally
+      }
+    }
+
+    // Remove from current day's completions
+    setCompletions(prev => {
+      const newCompletions = { ...prev }
+      delete newCompletions[habitId]
+      return newCompletions
+    })
+  }
+
   const hasHabits = habits && habits.length > 0
 
   const completedCount = Object.values(completions).filter(Boolean).length
@@ -320,13 +355,16 @@ export function SmartHabits() {
                 <p className="habit-name">{habit.name}</p>
                 <p className="habit-target">{habit.target} min</p>
               </div>
-
-              {streak && (
-                <div className="habit-streak">
-                  <span className="streak-icon">🔥</span>
-                  <span className="streak-count">{streak.current_streak}</span>
-                </div>
-              )}
+              
+              <button
+                className="habit-delete-btn"
+                onClick={() => deleteHabit(habit.id)}
+                type="button"
+                aria-label="Delete habit"
+                title="Delete"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           )
         }) : (
