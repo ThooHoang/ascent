@@ -24,7 +24,7 @@ function WorkoutDetailsPage() {
   const [editForm, setEditForm] = useState({ name: '', sets: '', reps: '' })
   const [deletingExerciseId, setDeletingExerciseId] = useState(null)
   const [addingExerciseActive, setAddingExerciseActive] = useState(false)
-  const [addForm, setAddForm] = useState({ name: '', sets: '', reps: '' })
+  const [addForm, setAddForm] = useState({ name: '', sets: '', reps: '', weight: '' })
 
   useEffect(() => {
     let interval
@@ -44,16 +44,16 @@ function WorkoutDetailsPage() {
 
   const exerciseData = {
     'upper-body': [
-      { id: 1, name: 'Bench Press', sets: '4', reps: '8-10', emoji: '🏋️' },
-      { id: 2, name: 'Barbell Rows', sets: '4', reps: '6-8', emoji: '🏋️' },
-      { id: 3, name: 'Pull-ups', sets: '3', reps: '8-10', emoji: '🏋️' },
-      { id: 4, name: 'Dips', sets: '3', reps: '8-10', emoji: '🏋️' },
+      { id: 1, name: 'Bench Press', sets: '4', reps: '8-10', weight: '85', emoji: '🏋️' },
+      { id: 2, name: 'Barbell Rows', sets: '4', reps: '6-8', weight: '95', emoji: '🏋️' },
+      { id: 3, name: 'Pull-ups', sets: '3', reps: '8-10', weight: 'BW', emoji: '🏋️' },
+      { id: 4, name: 'Dips', sets: '3', reps: '8-10', weight: 'BW', emoji: '🏋️' },
     ],
     'lower-body': [
-      { id: 1, name: 'Squats', sets: '4', reps: '6-8', emoji: '🦵' },
-      { id: 2, name: 'Deadlifts', sets: '4', reps: '4-6', emoji: '🏋️' },
-      { id: 3, name: 'Leg Press', sets: '3', reps: '8-10', emoji: '🦵' },
-      { id: 4, name: 'Leg Curls', sets: '3', reps: '10-12', emoji: '🦵' },
+      { id: 1, name: 'Squats', sets: '4', reps: '6-8', weight: '125', emoji: '🦵' },
+      { id: 2, name: 'Deadlifts', sets: '4', reps: '4-6', weight: '145', emoji: '🏋️' },
+      { id: 3, name: 'Leg Press', sets: '3', reps: '8-10', weight: '200', emoji: '🦵' },
+      { id: 4, name: 'Leg Curls', sets: '3', reps: '10-12', weight: '80', emoji: '🦵' },
     ],
   }
 
@@ -163,20 +163,20 @@ function WorkoutDetailsPage() {
 
   const handleEdit = (exercise) => {
     setEditingExercise(exercise.id)
-    setEditForm({ name: exercise.name, sets: exercise.sets, reps: exercise.reps })
+    setEditForm({ name: exercise.name, sets: exercise.sets, reps: exercise.reps, weight: exercise.weight || '' })
   }
 
   const saveEdit = () => {
-    if (!editForm.name.trim() || !editForm.sets.trim() || !editForm.reps.trim()) {
+    if (!editForm.name.trim() || !editForm.sets.trim() || !editForm.reps.trim() || !editForm.weight.trim()) {
       return
     }
     setExercises(exercises.map(ex => 
       ex.id === editingExercise 
-        ? { ...ex, name: editForm.name, sets: editForm.sets, reps: editForm.reps }
+        ? { ...ex, name: editForm.name, sets: editForm.sets, reps: editForm.reps, weight: editForm.weight }
         : ex
     ))
     setEditingExercise(null)
-    setEditForm({ name: '', sets: '', reps: '' })
+    setEditForm({ name: '', sets: '', reps: '', weight: '' })
   }
 
   const deleteExercise = (id) => {
@@ -227,6 +227,11 @@ function WorkoutDetailsPage() {
                         value={editForm.reps}
                         onChange={(e) => setEditForm({ ...editForm, reps: e.target.value })}
                       />
+                      <Input 
+                        placeholder="Weight (e.g., 185 or BW)"
+                        value={editForm.weight}
+                        onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
+                      />
                     </div>
                     <div className="edit-form-actions">
                       <Button 
@@ -252,7 +257,7 @@ function WorkoutDetailsPage() {
                     <div className="exercise-row-content">
                       <div className="exercise-row-info">
                         <h3 className="exercise-name">{exercise.name}</h3>
-                        <p className="exercise-details">{exercise.sets} sets × {exercise.reps} reps</p>
+                        <p className="exercise-details">{exercise.sets} sets × {exercise.reps} reps @ {exercise.weight || '—'}</p>
                       </div>
                       <button
                         className="exercise-checkbox-btn"
@@ -348,24 +353,28 @@ function WorkoutDetailsPage() {
                 value={addForm.reps}
                 onChange={(e) => setAddForm({ ...addForm, reps: e.target.value })}
               />
+              <Input 
+                placeholder="Weight (e.g., 185 or BW)"
+                value={addForm.weight}
+                onChange={(e) => setAddForm({ ...addForm, weight: e.target.value })}
+              />
             </div>
             <div className="modal-actions">
-              <Button size="large" variant="secondary" onClick={() => { setAddingExerciseActive(false); setAddForm({ name: '', sets: '', reps: '' }) }}>Cancel</Button>
+              <Button size="large" variant="secondary" onClick={() => { setAddingExerciseActive(false); setAddForm({ name: '', sets: '', reps: '', weight: '' }) }}>Cancel</Button>
               <Button size="large" variant="primary" onClick={() => {
-                if (!addForm.name.trim() || !addForm.sets.trim() || !addForm.reps.trim()) return
+                if (!addForm.name.trim() || !addForm.sets.trim() || !addForm.reps.trim() || !addForm.weight.trim()) return
                 const nextId = exercises.length ? Math.max(...exercises.map(e => e.id)) + 1 : 1
-                const newExercise = { id: nextId, name: addForm.name.trim(), sets: addForm.sets.trim(), reps: addForm.reps.trim() }
+                const newExercise = { id: nextId, name: addForm.name.trim(), sets: addForm.sets.trim(), reps: addForm.reps.trim(), weight: addForm.weight.trim() }
                 const updated = [...exercises, newExercise]
                 setExercises(updated)
                 // clear completion persistence as list changed
                 try {
                   const keyUser = user?.id || 'guest'
-                  const today = new Date().toISOString().split('T')[0]
-                  const storageKey = `workout-completed-${keyUser}-${today}-${trainingType}`
+                  const storageKey = `workout-completed-${keyUser}-${selectedDate}-${trainingType}`
                   localStorage.setItem(storageKey, JSON.stringify(Array.from(completed)))
                 } catch {}
                 setAddingExerciseActive(false)
-                setAddForm({ name: '', sets: '', reps: '' })
+                setAddForm({ name: '', sets: '', reps: '', weight: '' })
               }}>Add</Button>
             </div>
           </div>
