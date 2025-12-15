@@ -42,6 +42,21 @@ function WorkoutDetailsPage() {
     return () => clearInterval(interval)
   }, [breakActive, isBreakRunning, breakTimeLeft])
 
+  // Close dialogs/break on Escape for accessibility
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (deletingExerciseId) setDeletingExerciseId(null)
+        else if (addingExerciseActive) setAddingExerciseActive(false)
+        else if (finishConfirmActive) setFinishConfirmActive(false)
+        else if (finishSuccessActive) setFinishSuccessActive(false)
+        else if (breakActive) stopBreak()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [deletingExerciseId, addingExerciseActive, finishConfirmActive, finishSuccessActive, breakActive])
+
   const exerciseData = {
     'upper-body': [
       { id: 1, name: 'Bench Press', sets: '4', reps: '8-10', weight: '85', emoji: '🏋️' },
@@ -228,7 +243,7 @@ function WorkoutDetailsPage() {
                         onChange={(e) => setEditForm({ ...editForm, reps: e.target.value })}
                       />
                       <Input 
-                        placeholder="Weight (e.g., 185 or BW)"
+                        placeholder="Weight (kg or BW)"
                         value={editForm.weight}
                         onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
                       />
@@ -257,7 +272,7 @@ function WorkoutDetailsPage() {
                     <div className="exercise-row-content">
                       <div className="exercise-row-info">
                         <h3 className="exercise-name">{exercise.name}</h3>
-                        <p className="exercise-details">{exercise.sets} sets × {exercise.reps} reps @ {exercise.weight || '—'}</p>
+                        <p className="exercise-details">{exercise.sets} sets × {exercise.reps} reps @ {exercise.weight ? (exercise.weight === 'BW' ? 'BW' : `${exercise.weight} kg`) : '—'}</p>
                       </div>
                       <button
                         className="exercise-checkbox-btn"
@@ -306,9 +321,9 @@ function WorkoutDetailsPage() {
       {/* Delete Confirmation Modal */}
       {deletingExerciseId && (
         <div className="modal-overlay">
-          <div className="modal-container delete-modal">
-            <h2 className="modal-title">Delete Exercise?</h2>
-            <p className="modal-description">
+          <div className="modal-container delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-desc">
+            <h2 id="delete-title" className="modal-title">Delete Exercise?</h2>
+            <p id="delete-desc" className="modal-description">
               This action cannot be undone. The exercise will be removed from your workout.
             </p>
             <div className="modal-actions">
@@ -335,8 +350,8 @@ function WorkoutDetailsPage() {
       {/* Add Exercise Modal */}
       {addingExerciseActive && (
         <div className="modal-overlay">
-          <div className="modal-container">
-            <h2 className="modal-title">Add Exercise</h2>
+          <div className="modal-container" role="dialog" aria-modal="true" aria-labelledby="add-title">
+            <h2 id="add-title" className="modal-title">Add Exercise</h2>
             <div className="edit-form-fields">
               <Input 
                 placeholder="Exercise name"
@@ -354,7 +369,7 @@ function WorkoutDetailsPage() {
                 onChange={(e) => setAddForm({ ...addForm, reps: e.target.value })}
               />
               <Input 
-                placeholder="Weight (e.g., 185 or BW)"
+                placeholder="Weight (kg or BW)"
                 value={addForm.weight}
                 onChange={(e) => setAddForm({ ...addForm, weight: e.target.value })}
               />
@@ -401,9 +416,9 @@ function WorkoutDetailsPage() {
               {/* Finish Confirmation Modal */}
               {finishConfirmActive && (
                 <div className="modal-overlay">
-                  <div className="modal-container">
-                    <h2 className="modal-title">Finish workout?</h2>
-                    <p className="modal-description">We'll log this session to your workouts.</p>
+                  <div className="modal-container" role="dialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-desc">
+                    <h2 id="finish-title" className="modal-title">Finish workout?</h2>
+                    <p id="finish-desc" className="modal-description">We'll log this session to your workouts.</p>
                     <div className="modal-actions">
                       <Button size="large" variant="secondary" onClick={() => setFinishConfirmActive(false)}>Cancel</Button>
                       <Button size="large" variant="primary" onClick={() => { setFinishConfirmActive(false); finishWorkout() }}>Confirm</Button>
@@ -415,9 +430,9 @@ function WorkoutDetailsPage() {
               {/* Success Modal */}
               {finishSuccessActive && (
                 <div className="modal-overlay">
-                  <div className="modal-container">
-                    <h2 className="modal-title">Workout logged 🎉</h2>
-                    <p className="modal-description">Nice work! Keep the momentum going.</p>
+                  <div className="modal-container" role="dialog" aria-modal="true" aria-labelledby="success-title" aria-describedby="success-desc">
+                    <h2 id="success-title" className="modal-title">Workout logged 🎉</h2>
+                    <p id="success-desc" className="modal-description">Nice work! Keep the momentum going.</p>
                     <div className="modal-actions">
                       <Button size="large" variant="primary" onClick={() => { setFinishSuccessActive(false); navigate('/workouts') }}>Go to Workouts</Button>
                     </div>
@@ -429,7 +444,7 @@ function WorkoutDetailsPage() {
 
       {breakActive && (
         <div className="break-modal-overlay">
-          <div className="break-modal-container">
+          <div className="break-modal-container" role="dialog" aria-modal="true" aria-labelledby="break-label" aria-describedby="break-time-desc">
             <button
               className="break-close-btn"
               onClick={stopBreak}
@@ -458,8 +473,8 @@ function WorkoutDetailsPage() {
                 />
               </svg>
               <div className="break-timer-display">
-                <p className="break-time">{formatTime(breakTimeLeft)}</p>
-                <p className="break-label">Rest</p>
+                <p className="break-time" id="break-time-desc" aria-live="polite">{formatTime(breakTimeLeft)}</p>
+                <p className="break-label" id="break-label">Rest</p>
               </div>
             </div>
 

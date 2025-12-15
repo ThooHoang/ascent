@@ -212,6 +212,8 @@ function WeightOverviewPage() {
                               src={entry.photo_url} 
                               alt="Progress" 
                               className="entry-photo" 
+                              loading="lazy"
+                              decoding="async"
                               onClick={() => setSelectedPhoto(entry.photo_url)}
                               style={{ cursor: 'pointer' }}
                             />
@@ -239,7 +241,7 @@ function WeightOverviewPage() {
             >
               <X size={28} />
             </button>
-            <img src={selectedPhoto} alt="Full preview" className="photo-modal-image" />
+            <img src={selectedPhoto} alt="Full preview" className="photo-modal-image" decoding="async" />
           </div>
         </div>
       )}
