@@ -122,9 +122,6 @@ function SleepPage() {
             <p className="sleep-avg-hint">{bedtimeHint}</p>
           </div>
         </section>
-
-        <SleepCalculator />
-
         <section className="sleep-form">
           <div className="sleep-controls">
             <div className="sleep-input-group">
@@ -181,6 +178,8 @@ function SleepPage() {
             </Button>
           </div>
         </section>
+
+        <SleepCalculator />
 
         <section className="sleep-history">
           <p className="section-title">Recent sleep</p>
