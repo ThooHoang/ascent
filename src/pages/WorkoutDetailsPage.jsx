@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, Pause, Play, X, Edit, Trash2, Plus } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ArrowLeft, Check, Pause, Play, X, Edit, Trash2, Plus, Clock } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useSelectedDate } from '../contexts/DateContext'
 import { supabase } from '../lib/supabase'
@@ -25,6 +25,17 @@ function WorkoutDetailsPage() {
   const [deletingExerciseId, setDeletingExerciseId] = useState(null)
   const [addingExerciseActive, setAddingExerciseActive] = useState(false)
   const [addForm, setAddForm] = useState({ name: '', sets: '', reps: '', weight: '' })
+  const [benchMilestoneActive, setBenchMilestoneActive] = useState(false)
+  const [finishConfirmActive, setFinishConfirmActive] = useState(false)
+  const [finishSuccessActive, setFinishSuccessActive] = useState(false)
+  const [sessionInputs, setSessionInputs] = useState({})
+  const [history, setHistory] = useState([])
+  const historyKey = useMemo(() => `exercise-history-${user?.id || 'guest'}`, [user?.id])
+  const formatShortDate = (value) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
 
   useEffect(() => {
     let interval
@@ -78,8 +89,74 @@ function WorkoutDetailsPage() {
   }
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(historyKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          setHistory(parsed)
+        } else {
+          setHistory([])
+        }
+      } else {
+        setHistory([])
+      }
+    } catch {
+      setHistory([])
+    }
+  }, [historyKey])
+
+  const lastEntries = useMemo(() => {
+    const map = {}
+    history.forEach((entry) => {
+      if (entry.trainingType !== trainingType) return
+      const key = (entry.name || '').toLowerCase()
+      const current = map[key]
+      if (!current || new Date(entry.date) > new Date(current.date)) {
+        map[key] = entry
+      }
+    })
+    return map
+  }, [history, trainingType])
+
+  const getLastEntry = (name) => lastEntries[(name || '').toLowerCase()] || null
+
+  const historyByExercise = useMemo(() => {
+    const map = {}
+    history
+      .filter((entry) => entry.trainingType === trainingType)
+      .forEach((entry) => {
+        const key = (entry.name || '').toLowerCase()
+        if (!map[key]) map[key] = []
+        map[key].push(entry)
+      })
+    Object.keys(map).forEach((key) => {
+      map[key] = map[key]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 3)
+    })
+    return map
+  }, [history, trainingType])
+
+  const recentTrainingSummary = useMemo(() => {
+    const sessions = history
+      .filter((h) => h.trainingType === trainingType)
+      .reduce((acc, cur) => {
+        const key = cur.date
+        if (!acc[key]) acc[key] = { date: cur.date, items: [] }
+        acc[key].items.push(cur)
+        return acc
+      }, {})
+    const sorted = Object.values(sessions).sort((a, b) => new Date(b.date) - new Date(a.date))
+    return sorted.slice(0, 2)
+  }, [history, trainingType])
+
+  const hasHistory = useMemo(() => history.some((h) => h.trainingType === trainingType), [history, trainingType])
+
+  useEffect(() => {
     const data = exerciseData[trainingType] || []
     setExercises(data)
+    setSessionInputs({})
     // Load persisted completion state for this session
     try {
       const keyUser = user?.id || 'guest'
@@ -94,6 +171,21 @@ function WorkoutDetailsPage() {
       }
     } catch {}
   }, [trainingType, selectedDate, user?.id])
+
+  useEffect(() => {
+    setSessionInputs((prev) => {
+      const next = { ...prev }
+      exercises.forEach((ex) => {
+        if (!next[ex.id]) {
+          const last = getLastEntry(ex.name)
+          if (last) {
+            next[ex.id] = { weight: last.weight || '', reps: last.reps || '' }
+          }
+        }
+      })
+      return next
+    })
+  }, [exercises, lastEntries])
 
   const toggleExercise = (id) => {
     const newCompleted = new Set(completed)
@@ -112,13 +204,27 @@ function WorkoutDetailsPage() {
     } catch {}
   }
 
-  const [finishConfirmActive, setFinishConfirmActive] = useState(false)
-  const [finishSuccessActive, setFinishSuccessActive] = useState(false)
+  const updateSessionInput = (id, field, value) => {
+    setSessionInputs((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }))
+  }
+
 
   const finishWorkout = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date(selectedDate).toISOString().split('T')[0]
       const trainingName = trainingNames[trainingType]?.name || 'Workout'
+      const progressEntries = exercises.map((ex) => {
+        const input = sessionInputs[ex.id] || {}
+        const weight = (input.weight || ex.weight || '').toString().trim()
+        const reps = (input.reps || ex.reps || '').toString().trim()
+        return { name: ex.name, trainingType, date: today, weight, reps }
+      })
 
       if (user?.id) {
         const { error } = await supabase
@@ -143,6 +249,15 @@ function WorkoutDetailsPage() {
         prev.push({ date: today, type: trainingName, completed: true })
         localStorage.setItem(key, JSON.stringify(prev))
       }
+      try {
+        const prevHistory = localStorage.getItem(historyKey)
+        const parsed = prevHistory ? JSON.parse(prevHistory) : []
+        const nextHistory = Array.isArray(parsed) ? [...parsed, ...progressEntries] : progressEntries
+        localStorage.setItem(historyKey, JSON.stringify(nextHistory))
+        setHistory(nextHistory)
+      } catch {}
+
+      progressEntries.forEach((entry) => maybeTriggerBenchMilestone(entry))
       setFinishSuccessActive(true)
     } catch (err) {
       console.error('Error finishing workout:', err)
@@ -176,6 +291,28 @@ function WorkoutDetailsPage() {
 
   const training = trainingNames[trainingType]
 
+  const maybeTriggerBenchMilestone = (exerciseLike) => {
+    try {
+      if (trainingType !== 'upper-body') return
+      const name = (exerciseLike?.name || '').toLowerCase()
+      if (!name.includes('bench')) return
+      const w = (exerciseLike?.weight || '').toString().trim()
+      if (!w || w.toLowerCase() === 'bw') return
+      const numeric = parseFloat(w)
+      if (Number.isNaN(numeric)) return
+      const key = `bench-100kg-celebrated-${user?.id || 'guest'}`
+      const already = localStorage.getItem(key)
+      if (!already && numeric >= 100) {
+        localStorage.setItem(key, 'true')
+        setBenchMilestoneActive(true)
+        document.documentElement.classList.add('egg-mode')
+        setTimeout(() => {
+          document.documentElement.classList.remove('egg-mode')
+        }, 10000)
+      }
+    } catch {}
+  }
+
   const handleEdit = (exercise) => {
     setEditingExercise(exercise.id)
     setEditForm({ name: exercise.name, sets: exercise.sets, reps: exercise.reps, weight: exercise.weight || '' })
@@ -185,13 +322,16 @@ function WorkoutDetailsPage() {
     if (!editForm.name.trim() || !editForm.sets.trim() || !editForm.reps.trim() || !editForm.weight.trim()) {
       return
     }
-    setExercises(exercises.map(ex => 
+    const updatedList = exercises.map(ex => 
       ex.id === editingExercise 
         ? { ...ex, name: editForm.name, sets: editForm.sets, reps: editForm.reps, weight: editForm.weight }
         : ex
-    ))
+    )
+    setExercises(updatedList)
     setEditingExercise(null)
     setEditForm({ name: '', sets: '', reps: '', weight: '' })
+    // Milestone: Bench Press 100kg+
+    maybeTriggerBenchMilestone({ name: editForm.name, weight: editForm.weight })
   }
 
   const deleteExercise = (id) => {
@@ -200,6 +340,11 @@ function WorkoutDetailsPage() {
     const newCompleted = new Set(completed)
     newCompleted.delete(id)
     setCompleted(newCompleted)
+    setSessionInputs((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }
 
   return (
@@ -220,12 +365,118 @@ function WorkoutDetailsPage() {
           </div>
         </section>
 
-        <section className="exercises-section">
+        <section className="progress-summary">
+          <div className="progress-header" style={{ marginBottom: '12px' }}>
+            <div>
+              <h2 className="section-title">Recent sessions</h2>
+              <p className="text-secondary">Last two sessions for this plan</p>
+            </div>
+          </div>
+          {recentTrainingSummary.length > 0 ? (
+            <div className="progress-cards">
+              {recentTrainingSummary.map((session) => (
+                <div key={session.date} className="progress-card">
+                  <div className="progress-card-header">
+                    <div>
+                      <p>{formatShortDate(session.date)}</p>
+                    </div>
+                  </div>
+                  <ul className="progress-list compact">
+                    {session.items.slice(0, 3).map((item, idx) => (
+                      <li key={`${session.date}-${item.name}-${idx}`} className="progress-list-row">
+                        <div className="progress-meta">
+                          <span className="progress-exercise" style={{ display: 'block', marginBottom: '2px' }}>{item.name}</span>
+                          <span className="progress-metric">Weight: {item.weight || '—'} · Reps: {item.reps || '—'}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="progress-empty">
+              {hasHistory
+                ? 'Not enough sessions yet—finish another workout to see the trend.'
+                : 'Log a workout to see your recent weights and reps.'}
+            </div>
+          )}
+        </section>
+
+        <section className="exercises-section simplified">
           <div className="exercises-list">
             {exercises.map((exercise) => (
-              <div key={exercise.id}>
-                {editingExercise === exercise.id ? (
-                  <div className="exercise-edit-form">
+              <div key={exercise.id} className={`exercise-card ${completed.has(exercise.id) ? 'completed' : ''}`}>
+                <div className="exercise-card-top" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <div className="exercise-main-info">
+                    <p className="exercise-name">{exercise.name}</p>
+                    <p className="exercise-details subtle">{exercise.sets} × {exercise.reps} @ {exercise.weight ? (exercise.weight === 'BW' ? 'BW' : `${exercise.weight} kg`) : '—'}</p>
+                    {getLastEntry(exercise.name) && (
+                      <p className="exercise-details subtle">Prev: {getLastEntry(exercise.name)?.weight || '—'} kg · {getLastEntry(exercise.name)?.reps || '—'} reps</p>
+                    )}
+                  </div>
+                  <div
+                    className="exercise-actions-right"
+                    style={{ marginLeft: 'auto', display: 'flex', gap: '0.35rem', alignItems: 'flex-start' }}
+                  >
+                    <button
+                      className="exercise-checkbox-btn large"
+                      onClick={() => toggleExercise(exercise.id)}
+                      type="button"
+                      aria-label={`Mark ${exercise.name} as ${completed.has(exercise.id) ? 'incomplete' : 'complete'}`}
+                      style={{ height: '48px', width: '48px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {completed.has(exercise.id) && <Check size={20} />}
+                    </button>
+                      <button 
+                        className="exercise-action-btn edit-btn" 
+                        type="button" 
+                        onClick={() => handleEdit(exercise)}
+                        aria-label={`Edit ${exercise.name}`}
+                        style={{ height: '48px', width: '48px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Edit size={16} />
+                      </button>
+                    <button 
+                      className="exercise-action-btn delete-btn" 
+                      type="button" 
+                      onClick={() => setDeletingExerciseId(exercise.id)}
+                      aria-label={`Delete ${exercise.name}`}
+                        style={{ height: '48px', width: '48px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="exercise-input-row compact">
+                  <Input 
+                    placeholder="Weight"
+                    value={sessionInputs[exercise.id]?.weight || ''}
+                    onChange={(e) => updateSessionInput(exercise.id, 'weight', e.target.value)}
+                  />
+                  <Input 
+                    placeholder="Reps"
+                    value={sessionInputs[exercise.id]?.reps || ''}
+                    onChange={(e) => updateSessionInput(exercise.id, 'reps', e.target.value)}
+                  />
+                </div>
+
+                {historyByExercise[(exercise.name || '').toLowerCase()] && (
+                  <div className="exercise-history">
+                    <p className="exercise-history-label">Recent</p>
+                    <div className="exercise-history-chips">
+                      {historyByExercise[(exercise.name || '').toLowerCase()].map((entry, idx) => (
+                        <span key={`${entry.date}-${idx}`} className="history-chip">
+                          {formatShortDate(entry.date)} · {entry.weight || '—'} kg · {entry.reps || '—'} reps
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {editingExercise === exercise.id && (
+                  <div className="exercise-edit-sheet">
                     <div className="edit-form-fields">
                       <Input 
                         placeholder="Exercise name"
@@ -249,57 +500,8 @@ function WorkoutDetailsPage() {
                       />
                     </div>
                     <div className="edit-form-actions">
-                      <Button 
-                        size="small" 
-                        variant="primary"
-                        onClick={saveEdit}
-                      >
-                        Save
-                      </Button>
-                      <Button 
-                        size="small" 
-                        variant="secondary"
-                        onClick={() => setEditingExercise(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`exercise-row ${completed.has(exercise.id) ? 'completed' : ''}`}
-                  >
-                    <div className="exercise-row-content">
-                      <div className="exercise-row-info">
-                        <h3 className="exercise-name">{exercise.name}</h3>
-                        <p className="exercise-details">{exercise.sets} sets × {exercise.reps} reps @ {exercise.weight ? (exercise.weight === 'BW' ? 'BW' : `${exercise.weight} kg`) : '—'}</p>
-                      </div>
-                      <button
-                        className="exercise-checkbox-btn"
-                        onClick={() => toggleExercise(exercise.id)}
-                        type="button"
-                        aria-label={`Mark ${exercise.name} as ${completed.has(exercise.id) ? 'incomplete' : 'complete'}`}
-                      >
-                        {completed.has(exercise.id) && <Check size={20} />}
-                      </button>
-                    </div>
-                    <div className="exercise-row-actions">
-                      <button 
-                        className="exercise-action-btn edit-btn" 
-                        onClick={() => handleEdit(exercise)}
-                        type="button" 
-                        aria-label="Edit exercise"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        className="exercise-action-btn delete-btn" 
-                        onClick={() => setDeletingExerciseId(exercise.id)}
-                        type="button" 
-                        aria-label="Delete exercise"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <Button size="small" variant="primary" onClick={saveEdit}>Save</Button>
+                      <Button size="small" variant="secondary" onClick={() => setEditingExercise(null)}>Cancel</Button>
                     </div>
                   </div>
                 )}
@@ -390,6 +592,8 @@ function WorkoutDetailsPage() {
                 } catch {}
                 setAddingExerciseActive(false)
                 setAddForm({ name: '', sets: '', reps: '', weight: '' })
+                // Milestone: Bench Press 100kg+
+                maybeTriggerBenchMilestone(newExercise)
               }}>Add</Button>
             </div>
           </div>
@@ -397,14 +601,6 @@ function WorkoutDetailsPage() {
       )}
 
         <section className="workout-actions">
-          <Button 
-            size="large" 
-            variant="secondary"
-            onClick={startBreak}
-            className="w-full"
-          >
-            Take a Break
-          </Button>
           <Button 
             size="large" 
             variant="primary"
@@ -435,6 +631,19 @@ function WorkoutDetailsPage() {
                     <p id="success-desc" className="modal-description">Nice work! Keep the momentum going.</p>
                     <div className="modal-actions">
                       <Button size="large" variant="primary" onClick={() => { setFinishSuccessActive(false); navigate('/workouts') }}>Go to Workouts</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bench 100kg Milestone Modal */}
+              {benchMilestoneActive && (
+                <div className="modal-overlay">
+                  <div className="modal-container" role="dialog" aria-modal="true" aria-labelledby="bench-title" aria-describedby="bench-desc">
+                    <h2 id="bench-title" className="modal-title">100kg Club 🏆</h2>
+                    <p id="bench-desc" className="modal-description">Massive milestone on Bench Press. Welcome to the 100kg club!</p>
+                    <div className="modal-actions">
+                      <Button size="large" variant="primary" onClick={() => setBenchMilestoneActive(false)}>Awesome!</Button>
                     </div>
                   </div>
                 </div>
@@ -499,6 +708,16 @@ function WorkoutDetailsPage() {
           </div>
         </div>
       )}
+
+      <button
+        type="button"
+        className="break-fab"
+        onClick={startBreak}
+        aria-label="Start break timer"
+        title="Start break"
+      >
+        <Clock size={22} />
+      </button>
 
       <BottomNav />
     </div>

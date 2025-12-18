@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import { useSelectedDate } from '../../contexts/DateContext'
 import { Button } from '../ui/Button'
+import { useRoutine } from '../../hooks/useRoutine'
 
 export function TodayTraining() {
   const navigate = useNavigate()
@@ -12,31 +13,23 @@ export function TodayTraining() {
   const [todayTraining, setTodayTraining] = useState(null)
   const [workoutLogged, setWorkoutLogged] = useState(false)
   const [logging, setLogging] = useState(false)
+  const { trainingForDate } = useRoutine()
 
   useEffect(() => {
-    const today = new Date(selectedDate).getDay()
-    const trainingMap = {
-      0: { name: 'Rest Day', emoji: '😴', type: null },     // Sunday
-      1: { name: 'Rest Day', emoji: '😴', type: null },     // Monday
-      2: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Tuesday
-      3: { name: 'Rest Day', emoji: '😴', type: null },     // Wednesday
-      4: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Thursday
-      5: { name: 'Upper Body', emoji: '💪', type: 'upper-body' }, // Friday
-      6: { name: 'Lower Body', emoji: '🦵', type: 'lower-body' }, // Saturday
-    }
-    setTodayTraining(trainingMap[today])
-    checkIfLogged()
-  }, [user?.id, selectedDate])
+    const plan = trainingForDate(selectedDate)
+    setTodayTraining(plan)
+    checkIfLogged(plan)
+  }, [user?.id, selectedDate, trainingForDate])
 
-  const checkIfLogged = async () => {
+  const checkIfLogged = async (plan) => {
     if (!user?.id) return
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const dateValue = new Date(selectedDate).toISOString().split('T')[0]
       const { data } = await supabase
         .from('workout_logs')
         .select('id')
         .eq('user_id', user.id)
-        .eq('date', today)
+        .eq('date', dateValue)
         .limit(1)
       setWorkoutLogged(data && data.length > 0)
     } catch (err) {
@@ -54,14 +47,14 @@ export function TodayTraining() {
     if (!user?.id || !todayTraining) return
     try {
       setLogging(true)
-      const today = new Date().toISOString().split('T')[0]
+      const dateValue = new Date(selectedDate).toISOString().split('T')[0]
       
       const { error } = await supabase
         .from('workout_logs')
         .insert([
           {
             user_id: user.id,
-            date: today,
+            date: dateValue,
             type: todayTraining.name,
             completed: true,
           },

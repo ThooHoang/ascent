@@ -20,7 +20,7 @@ function HomePage() {
   const [stats, setStats] = useState({
     habitsLeft: 0,
     sleepHours: 0,
-    bestStreak: 0,
+    currentStreak: 0,
   })
   const { selectedDate, setSelectedDate } = useSelectedDate()
 
@@ -101,41 +101,73 @@ function HomePage() {
       }
     }
 
-    // Calculate best streak: longest consecutive days with at least 1 completed habit
-    let bestStreak = 0
+    // Calculate current streak with carry-over: if selectedDate has no logs but yesterday does, show yesterday's streak; otherwise 0
+    const anchor = new Date(selectedDate || new Date().toISOString().split('T')[0])
+    const toISO = (d) => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().split('T')[0]
+    const computeStreakFrom = (startDate, dateSet) => {
+      let count = 0
+      const cursor = new Date(startDate)
+      while (true) {
+        const key = toISO(cursor)
+        if (dateSet.has(key)) {
+          count += 1
+          cursor.setDate(cursor.getDate() - 1)
+        } else {
+          break
+        }
+      }
+      return count
+    }
+
+    let currentStreak = 0
     if (user?.id) {
       try {
         const { data: allCompletions, error } = await supabase
           .from('habit_completions')
           .select('date, completed')
           .eq('completed', true)
-          .order('date', { ascending: true })
 
         if (!error && allCompletions?.length) {
-          const completedDates = [...new Set(allCompletions.map(c => c.date))].sort()
-          let currentStreak = 1
-          let maxStreak = 1
-
-          for (let i = 1; i < completedDates.length; i++) {
-            const prevDate = new Date(completedDates[i - 1])
-            const currDate = new Date(completedDates[i])
-            const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24))
-
-            if (daysDiff === 1) {
-              currentStreak++
-              maxStreak = Math.max(maxStreak, currentStreak)
-            } else if (daysDiff > 1) {
-              currentStreak = 1
-            }
+          const dateSet = new Set(allCompletions.map(c => c.date))
+          const todayKey = toISO(anchor)
+          const y = new Date(anchor); y.setDate(y.getDate() - 1)
+          const yKey = toISO(y)
+          if (dateSet.has(todayKey)) {
+            currentStreak = computeStreakFrom(anchor, dateSet)
+          } else if (dateSet.has(yKey)) {
+            currentStreak = computeStreakFrom(y, dateSet)
+          } else {
+            currentStreak = 0
           }
-          bestStreak = maxStreak
         }
       } catch {
-        bestStreak = 0
+        currentStreak = 0
+      }
+    } else {
+      // guest mode
+      const completionsKey = 'habit-completions-guest'
+      const completions = localStorage.getItem(completionsKey)
+      if (completions) {
+        try {
+          const parsed = JSON.parse(completions).filter(c => c.completed)
+          const dateSet = new Set(parsed.map(c => c.date))
+          const todayKey = toISO(anchor)
+          const y = new Date(anchor); y.setDate(y.getDate() - 1)
+          const yKey = toISO(y)
+          if (dateSet.has(todayKey)) {
+            currentStreak = computeStreakFrom(anchor, dateSet)
+          } else if (dateSet.has(yKey)) {
+            currentStreak = computeStreakFrom(y, dateSet)
+          } else {
+            currentStreak = 0
+          }
+        } catch {
+          currentStreak = 0
+        }
       }
     }
 
-    setStats({ habitsLeft, sleepHours, bestStreak })
+    setStats({ habitsLeft, sleepHours, currentStreak })
   }
 
   const handleSelectDate = (dateStr) => {
@@ -247,7 +279,7 @@ function HomePage() {
         <section className="quick-stats">
           <StatCard value={stats.habitsLeft} label="Habits left" />
           <StatCard value={stats.sleepHours || '—'} label="Sleep (h)" />
-          <StatCard value={`🔥 ${stats.bestStreak}`} label="Best streak" />
+          <StatCard value={`🔥 ${stats.currentStreak}`} label="Current streak" />
         </section>
 
         <section className="dashboard-widgets">
@@ -270,7 +302,7 @@ function HomePage() {
               </div>
               <div className="sleep-actions">
                 <button className="btn-link-secondary" type="button" onClick={() => navigate('/sleep')}>
-                  View history →
+                  See details →
                 </button>
                 <button className="btn btn-sm" type="button" onClick={() => navigate('/sleep')}>
                   Log now

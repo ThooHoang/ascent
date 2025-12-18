@@ -48,6 +48,12 @@
   --transition: all 0.15s ease;
 }
 
+/* Easter egg theme overrides */
+.egg-mode {
+  --color-primary: #8B5CF6; /* violet-500 */
+  --color-primary-strong: #6D28D9; /* violet-700 */
+}
+
 /* Base Styles */
 *,
 *::before,
@@ -71,6 +77,21 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Simple banner for easter egg */
+.egg-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  z-index: 9999;
+  animation: fadeIn 200ms ease-out;
 }
 
 h1, h2, h3, h4 {
@@ -175,6 +196,24 @@ p { margin: 0; color: var(--color-text-secondary); }
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Ghost button - minimal, text-like */
+.btn-ghost {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(107, 114, 128, 0.08);
+  box-shadow: none;
+}
+
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn-sm {
@@ -2688,6 +2727,132 @@ p { margin: 0; color: var(--color-text-secondary); }
   gap: var(--space-4);
 }
 
+/* Sleep Calculator */
+.sleep-calculator {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sleep-calc-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sleep-calc-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.sleep-calc-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.sleep-mode-switch {
+  display: flex;
+  gap: var(--space-2);
+  background: var(--color-bg-soft);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+}
+
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.mode-pill.active {
+  background: var(--color-primary);
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.2);
+}
+
+.sleep-time-picker {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 220px;
+}
+
+.sleep-time-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.sleep-calc-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 420px) {
+  .sleep-calc-results { grid-template-columns: 1fr; }
+}
+
+.sleep-calc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.sleep-calc-card-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sleep-calc-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-soft);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--border-color);
+}
+
+.sleep-calc-reco {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+}
+
+.sleep-calc-time {
+  font-weight: 800;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+}
+
+.sleep-calc-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 /* Mini Calendar Styles */
 .mini-calendar {
   background: var(--color-bg-primary);
@@ -3419,6 +3584,12 @@ p { margin: 0; color: var(--color-text-secondary); }
   margin-top: var(--space-8);
 }
 
+.training-schedule-section .schedule-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
 .training-schedule {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -3472,6 +3643,51 @@ p { margin: 0; color: var(--color-text-secondary); }
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--color-text-primary);
+}
+
+/* Routine switch (compact pill selector) */
+.routine-switch {
+  display: inline-flex;
+  gap: var(--space-2);
+  background: var(--color-bg-soft);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.routine-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.routine-pill.active {
+  background: var(--color-primary);
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.18);
+}
+
+/* Workout sticky actions */
+.workout-sticky-actions {
+  position: sticky;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #FFFFFF 40%);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-6);
+}
+
+.workout-sticky-actions .actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
 }
 
 /* Workout Details Page */
@@ -3812,7 +4028,8 @@ p { margin: 0; color: var(--color-text-secondary); }
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding-bottom: var(--space-8);
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  margin-top: var(--space-6);
 }
 
 .completion-message {
@@ -3828,6 +4045,28 @@ p { margin: 0; color: var(--color-text-secondary); }
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-primary);
+}
+
+.break-fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.26);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.break-fab:hover {
+  background: var(--color-primary-strong);
 }
 
 /* Break Timer Modal */

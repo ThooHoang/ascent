@@ -233,7 +233,7 @@ export function WeightProgress() {
         </div>
         <div className="weight-actions">
           <button className="btn-link-secondary" type="button" onClick={() => navigate('/weight')}>
-            View history →
+            See details →
           </button>
           <button className="btn btn-sm" type="button" onClick={() => setIsEditing(true)}>
             Add weight

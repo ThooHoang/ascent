@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
+import { SleepCalculator } from '../components/features/SleepCalculator'
 import { BottomNav } from '../components/ui/BottomNav'
 import { useSelectedDate } from '../contexts/DateContext'
 
@@ -121,6 +122,8 @@ function SleepPage() {
             <p className="sleep-avg-hint">{bedtimeHint}</p>
           </div>
         </section>
+
+        <SleepCalculator />
 
         <section className="sleep-form">
           <div className="sleep-controls">
